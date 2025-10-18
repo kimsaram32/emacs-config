@@ -1,14 +1,10 @@
 ;;; -*- lexical-binding: t -*-
 
-(defun me:expand-emacs-file-name (name)
-  "Resolve NAME relative to `user-emacs-directory`."
-  (expand-file-name name user-emacs-directory))
-
-;; Melpa
+;; Packages
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
 ;; Custom
-(setq custom-file (me:expand-emacs-file-name "custom.el"))
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file)
 
 ;; Font
@@ -32,20 +28,29 @@
 ;; Scroll bar
 (scroll-bar-mode -1)
 
-;; Make sentences end with a single space.
+;; Tab bar
+(tab-bar-mode)
+
+(keymap-global-set "C-c <SPC>" tab-prefix-map)
+(keymap-set tab-prefix-map "]" 'tab-next)
+(keymap-set tab-prefix-map "[" 'tab-previous)
+
+(setq tab-bar-auto-width-max '((140) 20))
+
+;; Editing
 (setq sentence-end-double-space nil)
 
-;; Enable visual line mode.
 (visual-line-mode)
 
-;; Make C-SPC after C-u C-SPC traverse the mark ring.
 (setq set-mark-command-repeat-pop t)
 
-;; Scratch buffer
 (setq initial-scratch-message "\
 ;; Hi this is a scratch buffer
 
 ")
+
+(keymap-global-set "C-c b l" 'previous-buffer)
+(keymap-global-set "C-c b r" 'next-buffer)
 
 ;;;;
 
@@ -56,13 +61,73 @@
 
 (keymap-global-set "M-\"" 'me:insert-quotes)
 
-;; Org mode
+;; YaSnippet
+
+(use-package yasnippet :ensure t)
+
+;;;;
+
+(defconst me:note-root-directory "~/me/myself/"
+  "Root directory for notes.")
+
+(defconst me:note-periodic-directory
+  (file-name-concat me:note-root-directory "life/")
+  "Directory for periodic notes.")
+
+(defconst me:note-zk-directory
+  (file-name-concat me:note-root-directory "zk/")
+  "Directory for Zettelkasten.")
+
+(defconst me:note-template-directory
+  (file-name-concat me:note-root-directory "_templates")
+  "Directory for template notes.")
+
+(defun me:note-daily-name (date)
+  "Return file name of daily note for DATE."
+  (expand-file-name
+   (format-time-string "%Y/%m/%Y-%m-%d.org" (current-time))
+   me:note-periodic-directory))
+
+(defun me:note-open-daily (date)
+  "Open daily note for DATE in current window.
+When called interactively, open daily note for current date."
+  (interactive (list (current-time)))
+  (let* ((path (me:note-daily-name date))
+	 (exists (file-exists-p path)))
+    (find-file path)
+    (unless exists
+      (insert-file-contents (expand-file-name "daily.org" me:note-template-directory)))))
+
+(keymap-global-set "C-c n d" 'me:note-open-daily)
+
+;; ORG mode
 (use-package org
-  :bind (:map org-mode-map
+  :init
+  (setq org-use-extra-keys t)
+  :bind (("C-c l" . org-store-link)
+	 ("C-c a" . org-agenda)
+	 ("C-c c" . org-capture)
+	 
+	 :map org-mode-map
 	 ("M-{" . org-backward-element)
-	 ("M-}" . org-forward-element)
-	 ("M-p" . org-metaleft)
-	 ("M-n" . org-metaright)))
+	 ("M-}" . org-forward-element))
+  :config
+  (setq org-directory me:note-root-directory)
+  
+  (setq org-blank-before-new-entry '((heading . t) (plain-list-item auto)))
+  (setq org-preview-latex-default-process 'dvisvgm)
+  
+  (setq org-agenda-files (list me:note-root-directory
+			       (expand-file-name "buffers/" me:note-root-directory)
+			       (expand-file-name "zk/" me:note-root-directory)))
+  (setq org-agenda-window-setup 'current-buffer)
+  (setq org-agenda-restore-windows-after-quit t)
+  
+  (setq org-todo-keywords
+	'((sequence "TODO" "WORKING" "|" "DONE")))
+  (setq org-todo-keyword-faces
+	'(("TODO" . "gold") ("IDEA" . "coral")
+	("WORKING" . "CadetBlue2"))))
 
 ;; CC Mode
 (setq c-default-style "bsd")
@@ -84,7 +149,8 @@
 	 :map elfeed-show-mode-map
 	 ("r" . me:elfeed-show-untag-unread))
   :config
-  (load (me:expand-emacs-file-name "elfeed.el"))
+  (setq elfeed-search-filter "+unread")
+  (load (expand-file-name "elfeed.el" user-emacs-directory))
   (elfeed-update))
 
 ;; Modus-themes
@@ -96,3 +162,5 @@
   :config
   (setq modus-themes-common-palette-overrides modus-themes-preset-overrides-faint)
   (modus-themes-load-theme 'modus-vivendi-tinted))
+
+(put 'scroll-left 'disabled nil)
