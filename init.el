@@ -116,7 +116,33 @@ When called interactively, open daily note for current date."
   
   (setq org-blank-before-new-entry '((heading . t) (plain-list-item auto)))
   (setq org-preview-latex-default-process 'dvisvgm)
-  
+  (setq org-preview-latex-process-alist
+	'((dvisvgm :programs ("latex" "dvisvgm") :description "dvi > svg"
+		   :message
+		   "you need to install the programs: latex and dvisvgm."
+		   :image-input-type "dvi" :image-output-type "svg"
+		   :image-size-adjust (1.7 . 1.5) :latex-compiler
+		   ("latex -interaction nonstopmode -output-directory %o %f")
+		   :image-converter
+		   ("TEXMFCNF=\"/usr/local/texlive/2025:$TEXMFCNF\" dvisvgm --no-fonts --exact-bbox --scale=%S --output=%O --keep %f"))
+	  (dvipng :programs ("latex" "dvipng") :description "dvi > png"
+		  :message
+		  "you need to install the programs: latex and dvipng."
+		  :image-input-type "dvi" :image-output-type "png"
+		  :image-size-adjust (1.0 . 1.0) :latex-compiler
+		  ("latex -interaction nonstopmode -output-directory %o %f")
+		  :image-converter ("dvipng -D %D -T tight -o %O %f")
+		  :transparent-image-converter
+		  ("dvipng -D %D -T tight -bg Transparent -o %O %f"))
+	  (imagemagick :programs ("latex" "convert") :description "pdf > png"
+		       :message
+		       "you need to install the programs: latex and imagemagick."
+		       :image-input-type "pdf" :image-output-type "png"
+		       :image-size-adjust (1.0 . 1.0) :latex-compiler
+		       ("pdflatex -interaction nonstopmode -output-directory %o %f")
+		       :image-converter
+		       ("convert -density %D -trim -antialias %f -quality 100 %O"))))
+
   (setq org-agenda-files (list me:note-root-directory
 			       (expand-file-name "buffers/" me:note-root-directory)
 			       (expand-file-name "zk/" me:note-root-directory)))
