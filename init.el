@@ -171,7 +171,10 @@ When called interactively, open daily note for the date returned by
 
 zettel ID is resolved by calling `me:buffer-zettel-id'."
   (interactive)
-  (org-set-property "custom_id" (me:buffer-zettel-id)))
+  (save-excursion
+    (goto-char (point-min))
+    (org-next-visible-heading 1)
+    (org-set-property "custom_id" (me:buffer-zettel-id))))
 
 (defun me:zettel-search-backlinks ()
   "Search for ZK backlinks for current buffer via `rg'."
@@ -186,6 +189,8 @@ Also update the 'created' property if one does not exist."
   (interactive)
   (let ((date-string (format-time-string "%Y-%m-%d" (me:note-current-date))))
     (save-excursion
+      (goto-char (point-min))
+      (org-next-visible-heading 1)
       (unless (org-entry-get (point) "created")
 	(org-set-property "created" date-string))
       (org-set-property "updated" date-string))))
