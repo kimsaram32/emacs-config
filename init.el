@@ -11,7 +11,7 @@
 ; Prevent resizing windows when font changes.
 (setq-default window-size-fixed t)
 (set-face-attribute 'default nil
-		    :height 150
+		    :height 160
 		    :family "JetBrains Mono")
 (setq-default window-size-fixed nil)
 
@@ -193,7 +193,8 @@ Also update the 'created' property if one does not exist."
       (org-next-visible-heading 1)
       (unless (org-entry-get (point) "created")
 	(org-set-property "created" date-string))
-      (org-set-property "updated" date-string))))
+      (org-set-property "updated" date-string)))
+  (message "Set date properties"))
 
 (defun me:set-zettel-properties ()
   "Call `me:set-date-properties' and `me:set-zettel-id-property'."
@@ -275,7 +276,7 @@ The original file is deleted."
     (when is-zk
       (let ((tags))
 	(while (re-search-forward "#\\([A-z0-9가-힣\\-]+\\)" nil t)
-	  (push (match-string 1) tags)
+	  (push (string-replace "-" "_" (match-string 1)) tags)
 	  (let ((start (match-beginning 0))
 		(end (match-end 0)))
 	    (delete-region start end)
@@ -284,7 +285,8 @@ The original file is deleted."
 	    (when (looking-at "^[[:space:]]*$")
 	      (delete-line))))
 
-	(insert (format "#+filetags: %s\n" (org-make-tag-string tags)))))
+	(org-next-visible-heading 1)
+	(org-set-tags tags)))
 
     (goto-char (point-min))
     (org-next-visible-heading 1)
@@ -342,7 +344,8 @@ The original file is deleted."
   (plist-put org-format-latex-options :scale 1.5)
 
   (setq org-link-abbrev-alist
-	'(("zk" . "%(me:resolve-zk-link)")))
+	`(("zk" . "%(me:resolve-zk-link)")
+	  ("media" . ,(expand-file-name "media/" me:note-root-directory))))
   (add-to-list 'org-file-apps '("\\.md\\'" . emacs))
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
 
@@ -363,22 +366,19 @@ The original file is deleted."
 	org-priority-highest 65
 	org-priority-default 68)
   (setq org-capture-templates
-	`(("r" "Random thought"
+	`(("c" "Random thought"
 	   plain (function ,(lambda ()
 			      (me:note-open-daily (me:note-current-date))
 			      (goto-char (point-max))))
-	   "*** %<%H:%M> %?"
+	   "*** %T %?"
 	   :empty-lines-before 1)
 	  ("f" "Fleeting note"
 	   entry (file ,(expand-file-name "fleeting.org" me:note-root-directory))
-	   "* IDEA %?"
+	   "* IDEA %t %?"
 	   :empty-lines-before 1)
-	  ("T" "Topic"
-	   entry (file ,(expand-file-name "fleeting.org" me:note-root-directory))
-	   "* TOPIC %?")
 	  ("t" "Todo item"
 	   entry (file ,(expand-file-name "todo.org" me:note-root-directory))
-	   "* TODO %?"
+	   "* TODO %t %?"
 	   :prepend t
 	   :empty-lines-after 1)))
   (put 'me:resolve-zk-link 'org-link-abbrev-safe t))
@@ -433,3 +433,8 @@ The original file is deleted."
   (modus-themes-load-theme 'modus-vivendi-tinted))
 
 (put 'scroll-left 'disabled nil)
+
+;; Evil-mode
+
+(use-package evil :ensure t
+  :bind (("C-c e" . evil-mode)))
