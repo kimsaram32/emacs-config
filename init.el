@@ -342,6 +342,7 @@ The original file is deleted."
   (setq org-blank-before-new-entry '((heading . t) (plain-list-item auto)))
   (setq org-preview-latex-default-process 'dvisvgm)
   (plist-put org-format-latex-options :scale 1.5)
+  (setq org-startup-with-inline-images t)
 
   (setq org-link-abbrev-alist
 	`(("zk" . "%(me:resolve-zk-link)")
@@ -351,6 +352,7 @@ The original file is deleted."
 
   (setq org-agenda-files (list me:note-root-directory
 			       (expand-file-name "buffers/" me:note-root-directory)
+			       (expand-file-name "projects/" me:note-root-directory)
 			       me:note-zk-directory))
   (setq org-agenda-window-setup 'current-buffer)
   (setq org-agenda-restore-windows-after-quit t)
@@ -380,7 +382,17 @@ The original file is deleted."
 	   entry (file ,(expand-file-name "todo.org" me:note-root-directory))
 	   "* TODO %t %?"
 	   :prepend t
-	   :empty-lines-after 1)))
+	   :empty-lines-after 1)
+	  ("b" "Baekjoon problem"
+	   entry (file ,(expand-file-name "problems/baekjoon.org" me:note-root-directory))
+	   "* %^{id}. %^{title}
+
+[[https://www.acmicpc.net/problem/%\\1][Baekjoon]]
+
+** Ideas
+
+%?"
+	   :jump-to-captured t)))
   (put 'me:resolve-zk-link 'org-link-abbrev-safe t))
 
 ;; Rg
