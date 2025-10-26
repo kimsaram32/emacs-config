@@ -1,0 +1,849 @@
+#+startup: fold
+#+startup: hideblocks
+
+* Packages
+
+** Use Melpa
+
+#+begin_src elisp
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+#+end_src
+
+** Setup Custom
+
+#+begin_src elisp
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(load custom-file)
+#+end_src
+
+* exec-path-from-shell
+
+#+begin_src elisp
+(when (memq window-system '(mac ns x))
+  (exec-path-from-shell-initialize))
+#+end_src
+
+* Enable disabled commands
+
+#+begin_src elisp
+(put 'scroll-left 'disabled nil)
+#+end_src
+
+** Visual line mode
+
+#+begin_src elisp
+(visual-line-mode)
+#+end_src
+
+** Mark ring
+
+#+begin_src elisp
+(setq set-mark-command-repeat-pop t)
+#+end_src
+
+** Insert quotes more easily
+
+#+begin_src elisp
+(defun me:insert-quotes (&optional arg)
+  "Like `insert-parentheses`, but for quotes."
+  (interactive "P")
+  (insert-pair arg ?\" ?\"))
+
+(keymap-global-set "M-\"" 'me:insert-quotes)
+#+end_src
+
+* Text
+
+** Font faces
+
+*** Enable fixed windows
+
+Before customizing fonts, temporarily enable fixed windows
+to prevent resizing windows when changing fonts.
+
+#+begin_src elisp
+(setq-default window-size-fixed t)
+#+end_src
+
+*** Font faces
+
+#+begin_src elisp
+(set-face-attribute 'default nil
+		    :height 160
+		    :family "JetBrains Mono")
+(set-face-attribute 'variable-pitch nil
+		    :height 170
+		    :family "Helvetica Neue")
+#+end_src
+
+*** Disable fixed windows
+
+#+begin_src elisp
+(setq-default window-size-fixed nil)
+#+end_src
+
+** Line height
+
+#+begin_src elisp
+(setq-default line-spacing 2)
+#+end_src
+
+* UI
+
+** Disable menu bar mode
+
+#+begin_src elisp
+(menu-bar-mode -1)
+#+end_src
+
+** Disable tool bar mode
+
+#+begin_src elisp
+(tool-bar-mode -1)
+#+end_src
+
+** Disable scroll bar mode
+
+#+begin_src elisp
+(scroll-bar-mode -1)
+#+end_src
+
+** Set transparent title bars
+
+#+begin_src elisp
+(set-frame-parameter nil 'ns-transparent-toolbar t)
+(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+#+end_src
+
+** Clear title bar text
+
+#+begin_src elisp
+(setq-default frame-title-format "")
+#+end_src
+
+** Tab bar mode
+
+#+begin_src elisp
+(tab-bar-mode)
+
+(keymap-global-set "C-c <SPC>" tab-prefix-map)
+(keymap-set tab-prefix-map "]" 'tab-next)
+(keymap-set tab-prefix-map "[" 'tab-previous)
+
+(setq tab-bar-auto-width-max '((140) 20))
+#+end_src
+
+* Editing text
+
+** Sentences should end with one space
+
+#+begin_src elisp
+(setq sentence-end-double-space nil)
+#+end_src
+
+* Buffers
+
+** Default scratch buffer message
+
+#+begin_src elisp
+(setq initial-scratch-message "\
+;; Hi this is a scratch buffer
+
+")
+#+end_src
+
+** Add shortcut for switching previous/next buffer
+
+#+begin_src elisp
+(keymap-global-set "C-c b l" 'previous-buffer)
+(keymap-global-set "C-c b r" 'next-buffer)
+#+end_src
+
+** Helper function: delete current buffer's file
+
+#+begin_src elisp
+(defun delete-current-file ()
+  "Delete current buffer's file."
+  (interactive)
+  (delete-file (buffer-file-name)))
+#+end_src
+
+* Note taking
+
+** Constants
+
+*** Directories
+
+#+begin_src elisp
+(defconst me:note-root-directory "~/me/myself/"
+  "Root directory for notes.")
+
+(defconst me:note-periodic-directory
+  (file-name-concat me:note-root-directory "life/")
+  "Directory for periodic notes.")
+
+(defconst me:note-zk-directory
+  (file-name-concat me:note-root-directory "zk/")
+  "Directory for Zettelkasten.")
+
+(defconst me:note-template-directory
+  (file-name-concat me:note-root-directory "_templates")
+  "Directory for template notes.")
+#+end_src
+
+*** Starting hour of a day
+
+#+begin_src elisp
+(defconst me:note-day-start-hour 3 "The starting hour of a day for notes.")
+#+end_src
+
+** Get current day for the note system
+
+#+begin_src elisp
+(defun me:note-current-date ()
+  "Return current date for the note system. If the time is before
+`me:note-day-start-hour', return yesterday's date. Otherwise, return
+today's date."
+  (let* ((time (decode-time))
+	 (current-day (decoded-time-day time))
+	 (day (if (< (decoded-time-hour time) me:note-day-start-hour)
+		  (- current-day 1)
+		current-day)))
+    (encode-time (append (list 0 0 0 day) (seq-subseq time 4)))))
+#+end_src
+
+** Get file name for daily note
+
+#+begin_src elisp
+(defun me:note-daily-name (date)
+  "Return file name of the daily note for DATE."
+  (expand-file-name
+   (format-time-string "%Y/%m/%Y-%m-%d.org" date)
+   me:note-periodic-directory))
+#+end_src
+
+** Open daily note
+
+#+begin_src elisp
+(defun me:note-open-daily (date)
+  "Open daily note for DATE in current window.
+If file did not exist, insert template content.
+
+When called interactively, open daily note for the date returned by
+`me:note-current-date'."
+  (interactive (list (me:note-current-date)))
+  (let* ((path (me:note-daily-name date))
+	 (exists (file-exists-p path)))
+    (find-file path)
+    (unless exists
+      (insert-file-contents (expand-file-name "daily.org" me:note-template-directory)))))
+
+(keymap-global-set "C-c n d" 'me:note-open-daily)
+#+end_src
+
+* Zettelkasten
+
+** Predicate for zettel file names
+
+#+begin_src elisp
+(defun me:is-zettel-name-p (name)
+  "Return t if NAME is a file name to a zettel. else return nill."
+  (string-suffix-p "zk/" (file-name-directory name)))
+#+end_src
+
+** Clear zettel buffers
+
+#+begin_src elisp
+(defun me:clear-zettels ()
+  "Clear all Zettel buffers."
+  (interactive)
+  (mapc (lambda (x)
+	  (if-let ((file-name (buffer-file-name x)))
+	      (when (me:is-zettel-name-p file-name)
+		(with-current-buffer x
+		  (save-buffer)
+		  (kill-buffer)))))
+	(buffer-list)))
+
+(keymap-global-set "C-c z c" 'me:clear-zettels)
+#+end_src
+
+** Get zettel timestamp
+
+#+begin_src elisp
+(defun me:get-zettel-timestamp ()
+  "Get zettel timestamp for current time."
+  (format-time-string "%Y%m%d%H%M"))
+#+end_src
+
+** Open a zettel
+
+#+begin_src elisp
+(defun me:open-zettel ()
+  "Open a zettel file."
+  (interactive)
+  (find-file (file-name-with-extension (expand-file-name (me:get-zettel-timestamp)
+							 me:note-zk-directory)
+				       ".org")))
+
+(keymap-global-set "C-c z n" 'me:open-zettel)
+#+end_src
+
+** Get zettel id for current buffer
+
+#+begin_src elisp
+(defun me:buffer-zettel-id ()
+  "Return the zettel ID of current buffer."
+  (interactive)
+  (file-name-base (buffer-file-name)))
+#+end_src
+
+** Get zettel id for current buffer, but as a link format
+
+#+begin_src elisp
+(defun me:buffer-zettel-id-as-link ()
+  "Return the zettel ID of current buffer as Org link format."
+  (interactive)
+  (let ((id (me:buffer-zettel-id)))
+    (format "[[zk:%s][%s]]" id id)))
+
+(keymap-global-set "C-c z l" (lambda ()
+			       (interactive)
+			       (kill-new (me:buffer-zettel-id-as-link))))
+#+end_src
+
+** Managing properties
+
+*** Set the ID property
+
+#+begin_src elisp
+(defun me:set-zettel-id-property ()
+  "Set zettel ID as the value of 'custom_id' property to current buffer.
+
+zettel ID is resolved by calling `me:buffer-zettel-id'."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (org-next-visible-heading 1)
+    (org-set-property "custom_id" (me:buffer-zettel-id))))
+#+end_src
+
+*** Set date properties
+
+#+begin_src elisp
+(defun me:set-date-properties ()
+  "Update the 'updated' property of current buffer as current date.
+Also update the 'created' property if one does not exist."
+  (interactive)
+  (let ((date-string (format-time-string "%Y-%m-%d" (me:note-current-date))))
+    (save-excursion
+      (goto-char (point-min))
+      (org-next-visible-heading 1)
+      (unless (org-entry-get (point) "created")
+	(org-set-property "created" date-string))
+      (org-set-property "updated" date-string)))
+  (message "Set date properties"))
+#+end_src
+
+*** Set all zettel properties
+
+#+begin_src elisp
+(defun me:set-zettel-properties ()
+  "Call `me:set-date-properties' and `me:set-zettel-id-property'."
+  (interactive)
+  (me:set-date-properties)
+  (me:set-zettel-id-property))
+
+(keymap-global-set "C-c z u" 'me:set-zettel-properties)
+#+end_src
+
+** Search for backlinks
+
+#+begin_src elisp
+(defun me:zettel-search-backlinks ()
+  "Search for ZK backlinks for current buffer via `rg'."
+  (interactive)
+  (rg-run (me:buffer-zettel-id) "*" me:note-zk-directory t))
+
+(keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
+#+end_src
+
+* Org Mode
+
+Migrating from use-package
+
+** Key bindings
+
+#+begin_src elisp
+(use-package org
+  :bind (("C-c l" . org-store-link)
+	 ("C-c a" . org-agenda)
+	 ("C-c c" . org-capture)
+	 
+	 :map org-mode-map
+	 ("M-{" . org-backward-element)
+	 ("M-}" . org-forward-element)))
+#+end_src
+
+** Set Org directory to match my note taking system
+
+#+begin_src elisp
+(setq org-directory me:note-root-directory)
+#+end_src
+
+** Set blanks
+
+#+begin_src elisp
+(setq org-blank-before-new-entry '((heading . t) (plain-list-item auto)))
+#+end_src
+
+** Open markdown in Org
+
+#+begin_src elisp
+(add-to-list 'org-file-apps '("\\.md\\'" . emacs))
+#+end_src
+
+** Latex integration
+
+*** Use dvisvgm for rendering
+
+Dvisvgm configuration is patched for my environment...
+
+#+begin_src elisp
+(setq org-preview-latex-default-process 'dvisvgm)
+  
+(add-to-list 'org-preview-latex-process-alist
+	     '(dvisvgm :programs ("latex" "dvisvgm") :description "dvi > svg"
+		       :message
+		       "you need to install the programs: latex and dvisvgm."
+		       :image-input-type "dvi" :image-output-type "svg"
+		       :image-size-adjust (1.7 . 1.5) :latex-compiler
+		       ("latex -interaction nonstopmode -output-directory %o %f")
+		       :image-converter
+		       ("TEXMFCNF=\"/usr/local/texlive/2025:$TEXMFCNF\" dvisvgm --no-fonts --exact-bbox --scale=%S --output=%O --keep %f")))
+#+end_src
+
+*** Set latex scale
+
+#+begin_src elisp
+(plist-put org-format-latex-options :scale 1.5)
+#+end_src
+
+** Startup options
+
+*** Start with inline images
+
+#+begin_src elisp
+(setq org-startup-with-inline-images t)
+#+end_src
+
+** Link abbrevations
+
+#+begin_src elisp
+(setq org-link-abbrev-alist
+      `(("zk" . ,(expand-file-name "zk/%s.org" me:note-root-directory))
+	("media" . ,(expand-file-name "media/" me:note-root-directory))))
+#+end_src
+
+** Org-agenda
+
+*** Set files for agenda
+
+#+begin_src elisp
+(setq org-agenda-files (list me:note-root-directory
+			     (expand-file-name "buffers/" me:note-root-directory)
+			     (expand-file-name "projects/" me:note-root-directory)
+			     me:note-zk-directory))
+#+end_src
+
+*** Display agenda in current buffer
+
+#+begin_src elisp
+(setq org-agenda-window-setup 'current-buffer)
+#+end_src
+
+*** Restore windows after quit
+
+#+begin_src elisp
+(setq org-agenda-restore-windows-after-quit t)
+#+end_src
+
+*** Ignore entries after deadline
+
+#+begin_src elisp
+(setq org-agenda-todo-ignore-deadlines -1)
+#+end_src
+
+** Todo
+
+*** Todo keywords
+
+#+begin_src elisp
+(setq org-todo-keywords
+      '((sequence "TODO" "WORKING" "|" "DONE")))
+(setq org-todo-keyword-faces
+      '(("TODO" . "gold") ("IDEA" . "coral")
+	("WORKING" . "CadetBlue2")))
+#+end_src
+
+** Priority
+
+#+begin_src elisp
+(setq org-priority-lowest 68
+	org-priority-highest 65
+	org-priority-default 68)
+#+end_src
+
+** Capture templates
+
+*** Random thoughts (journaling)
+
+#+begin_src elisp
+(add-to-list 'org-capture-templates
+	     `("c" "Random thought"
+	       plain (function ,(lambda ()
+				  (me:note-open-daily (me:note-current-date))
+				  (goto-char (point-max))))
+	       "*** %T %?"
+	       :empty-lines-before 1))
+#+end_src
+
+*** Fleeting note
+
+#+begin_src elisp
+(add-to-list 'org-capture-templates
+	     `("f" "Fleeting note"
+	       entry (file ,(expand-file-name "fleeting.org" me:note-root-directory))
+	       "* IDEA %t %?"
+	       :empty-lines-before 1))
+#+end_src
+
+*** Todo item
+
+#+begin_src elisp
+(add-to-list 'org-capture-templates
+	     `("t" "Todo item"
+	       entry (file ,(expand-file-name "todo.org" me:note-root-directory))
+	       "* TODO %t %?"
+	       :prepend t
+	       :empty-lines-after 1))
+#+end_src
+
+*** Baekjoon problem
+
+#+begin_src elisp
+(add-to-list 'org-capture-template
+	     `("b" "Baekjoon problem"
+	      entry (file ,(expand-file-name "problems/baekjoon.org" me:note-root-directory))
+	      "* %^{id}. %^{title}
+
+[[https://www.acmicpc.net/problem/%\\1][Baekjoon]]
+
+,** Ideas
+
+%?"
+	      :jump-to-captured t))
+#+end_src
+** Babel
+
+*** Disable confirmation
+
+I know what I'm doing
+
+#+begin_src elisp
+(setq org-confirm-babel-evaluate nil)
+#+end_src
+
+*** Make the result keyword lowercased
+
+#+begin_src elisp
+(setq org-babel-results-keyword "results")
+#+end_src
+
+*** Remove source code indention
+
+#+begin_src elisp
+(setq org-edit-src-content-indentation 0)
+#+end_src
+
+** I don't know what it does
+
+todo
+
+#+begin_src elisp
+(setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+#+end_src
+
+* Org-roam
+
+
+
+#+begin_src elisp
+(use)
+#+end_src
+
+* Migration
+
+** Check if the current line is empty
+
+Helper function for migration command
+
+#+begin_src elisp
+(defun is-empty-line-p ()
+  "Return t if current line only includes whitespace, else return
+nil."
+  (not (not (string-match-p "^[[:blank:]]*$"
+        (buffer-substring (line-beginning-position)
+                          (line-end-position))))))
+#+end_src
+
+** Migrate old Org mode documents
+
+#+begin_src elisp
+(defun me:migrate-org-properties ()
+  "Migrate current old Org document to follow the new format. Specifically:
+
+- move incorrect buffer options (created and updated) into properties.
+- if ZK, call `me:set-zettel-id-property'."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (let ((created-at (and (re-search-forward "^#\\+created: \\(.+\\)$" nil t)
+			   (let ((val (match-string 1)))
+			     (beginning-of-line)
+			     (delete-line)
+			     val)))
+	  (updated-at (and (re-search-forward "^#\\+updated: \\(.+\\)$" nil t)
+			   (let ((val (match-string 1)))
+			     (beginning-of-line)
+			     (delete-line)
+			     val))))
+      (org-next-visible-heading 1)
+      (when created-at (org-set-property "created" created-at))
+      (when updated-at (org-set-property "updated" updated-at)))
+    (me:set-zettel-id-property)))
+#+end_src
+** Migration from markdown
+
+Previously, I used plain markdown documents for note taking.
+Now I have to migrate from it.
+
+I chose incremental migration. When I see a markdown note, I
+explicitly call the migration command to convert to Org format. I
+wanted more fine-grained control over my notes, so I needed to verify
+the correctness of the conversion result.
+
+*** Pandoc migration command
+
+The path to the lua filter is hardcoded. This could be improved.
+
+#+begin_src elisp
+(defvar me:pandoc-migration-command
+  "pandoc --wrap=preserve -f commonmark+task_lists+yaml_metadata_block -s
+-t org --lua-filter=/Users/kimsaram32/me/myself/pandoc-filter.lua"
+  "Command to use for `me:migrate-to-org'.")
+#+end_src
+
+*** Convert from markdown to Org
+
+#+begin_src elisp
+(defun me:migrate-markdown-to-org ()
+  "Convert current markdown file into Org Mode document, using Pandoc.
+Open the converted document in current buffer.
+
+Perform the following transformations:
+
+- move frontmatters (created and updated) into properties.
+- if ZK, transform links and add custom_id property."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (let* ((input-buffer (current-buffer))
+	   (input-file-name (buffer-file-name))
+	   (created-at (when (re-search-forward "^created: \\(.+\\)$" nil t)
+			 (match-string 1)))
+	   (updated-at (when (re-search-forward "^updated: \\(.+\\)$" nil t)
+			 (match-string 1)))
+	   (is-zk (me:is-zettel-name-p input-file-name)))
+
+      (save-buffer)
+      
+      (with-temp-buffer
+	(call-process-shell-command me:pandoc-migration-command input-file-name t)
+	(let ((temp-buffer (current-buffer)))
+	  (with-current-buffer input-buffer
+	    (replace-buffer-contents temp-buffer))))
+
+      (goto-char (point-min))
+      (when is-zk
+	(let ((tags))
+	  (while (re-search-forward "#\\([A-z0-9가-힣\\-]+\\)" nil t)
+	    (push (string-replace "-" "_" (match-string 1)) tags)
+	    (let ((start (match-beginning 0))
+		  (end (match-end 0)))
+	      (delete-region start end)
+	      (goto-char start)
+	      (beginning-of-line)
+	      (when (looking-at "^[[:space:]]*$")
+		(delete-line))))
+
+	  (org-next-visible-heading 1)
+	  (org-set-tags tags)))
+
+      (goto-char (point-min))
+      (org-next-visible-heading 1)
+      (when created-at
+	(org-set-property "created" created-at))
+      (when updated-at
+	(org-set-property "updated" updated-at))
+      
+      (when is-zk
+	(me:set-zettel-id-property)
+	(save-excursion
+	  (replace-regexp "\\[\\[\\([0-9]+\\)]]" "[[zk:\\1][\\1]]"))))))
+#+end_src
+
+*** Change verbatim to code
+
+Pandoc produces verbatim (=) in place of markdown code (`), but I
+prefer to use code (~).
+
+#+begin_src elisp
+(defun me:verbatim-to-code ()
+  (interactive)
+  (replace-regexp "=" "~"))
+
+(keymap-global-set "C-c m c" 'me:verbatim-to-code)
+#+end_src
+
+** Automatic migration
+*** Markdown indicator string
+
+I renamed all *.md documents to *.org for easier file searching and
+file name resolutions.
+
+To distinguish old markdown documents, I included fixed indicator
+strings to them.
+
+#+begin_src elisp
+(defconst me:markdown-indicator-string "###MARKDOWN###"
+  "String that indicates the current file is a markdown document.")
+#+end_src
+
+*** DWIM migration
+
+#+begin_src elisp
+(defun me:migrate-dwim ()
+  "Migrate current file. DWIM."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (if (search-forward me:markdown-indicator-string nil t)
+	(progn
+	  (replace-match "" nil t)
+	  (while (search-forward me:markdown-indicator-string nil t)
+	    (replace-match "" nil t))
+	  (me:migrate-markdown-to-org))
+      (me:migrate-org-properties))))
+
+(keymap-global-set "C-c m m" 'me:migrate-dwim)
+#+end_src
+
+* Languages
+
+** Python
+
+*** Set shell interpreter
+
+The default one is "python3".
+
+#+begin_src elisp
+(setq python-shell-interpreter "python")
+#+end_src
+
+** CC Mode
+
+#+begin_src elisp
+(setq c-default-style "bsd")
+
+(add-hook 'c-mode-hook
+	  (lambda ()
+	    (setq c-basic-offset 2)))
+#+end_src
+
+* Rg
+
+#+begin_src elisp
+(use-package rg :ensure t
+  :bind (:map rg-mode-map
+	      ("C-n" . rg-next-file)
+	      ("C-p" . rg-prev-file))
+  :config
+  (rg-enable-default-bindings)
+  (rg-define-search zettelkasten
+    "Search for zettels"
+    :dir me:note-zk-directory
+    :menu ("Search" "z" "Zettelkasten")))
+#+end_src
+
+* Elfeed
+
+#+begin_src elisp
+(defun me:elfeed-show-untag-unread ()
+  (interactive)
+  (elfeed-show-untag 'unread))
+
+(defun me:elfeed-show-visit-eww ()
+  "Visit the current entry with `eww'."
+  (interactive)
+  (when-let ((link (elfeed-entry-link elfeed-show-entry)))
+    (eww link)))
+
+(use-package elfeed :ensure t
+  :bind (("C-x w" . 'elfeed)
+	 :map elfeed-search-mode-map
+	 ("TAB" . next-line)
+	 ("S-<tab>" . previous-line)
+	 :map elfeed-show-mode-map
+	 ("r" . me:elfeed-show-untag-unread)
+	 ("w" . me:elfeed-show-visit-eww))
+  :config
+  (setq elfeed-search-filter "+unread")
+  (load (expand-file-name "elfeed.el" user-emacs-directory))
+  (elfeed-update))
+#+end_src
+
+* Shr / EWW
+
+** Set max width for readability
+
+#+begin_src elisp
+(setq shr-max-width 80)
+#+end_src
+
+** Modus-themes
+
+#+begin_src elisp
+(use-package modus-themes :ensure t
+  :init
+  (require-theme 'modus-themes)
+  :bind (("<f5>" . modus-themes-rotate))
+  :config
+  (setq modus-themes-common-palette-overrides modus-themes-preset-overrides-faint)
+  (modus-themes-load-theme 'modus-vivendi-tinted))
+#+end_src
+
+* YaSnippet
+
+#+begin_src elisp
+(use-package yasnippet :ensure t)
+#+end_src
+
+* Evil mode
+
+I don't enable it by default but it's nice to have
+
+#+begin_src elisp
+(use-package evil :ensure t
+  :bind (("C-c e" . evil-mode)))
+#+end_src
