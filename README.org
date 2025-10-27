@@ -1,5 +1,6 @@
 #+startup: fold
 #+startup: hideblocks
+#+property: header-args:elisp :results silent
 
 * Packages
 
@@ -152,7 +153,7 @@ to prevent resizing windows when changing fonts.
 ")
 #+end_src
 
-** Add shortcut for switching previous/next buffer
+** Short for switching previous/next buffer
 
 #+begin_src elisp
 (keymap-global-set "C-c b l" 'previous-buffer)
@@ -162,7 +163,7 @@ to prevent resizing windows when changing fonts.
 ** Helper function: delete current buffer's file
 
 #+begin_src elisp
-(defun delete-current-file ()
+(defun me:delete-current-file ()
   "Delete current buffer's file."
   (interactive)
   (delete-file (buffer-file-name)))
@@ -268,12 +269,20 @@ When called interactively, open daily note for the date returned by
 (keymap-global-set "C-c z c" 'me:clear-zettels)
 #+end_src
 
+** Zettel id format
+
+#+begin_src elisp
+(defconst me:zettel-id-format
+  "%Y%m%d%H%M"
+  "The format for zettel IDs.")
+#+end_src
+
 ** Get zettel timestamp
 
 #+begin_src elisp
 (defun me:get-zettel-timestamp ()
   "Get zettel timestamp for current time."
-  (format-time-string "%Y%m%d%H%M"))
+  (format-time-string me:zettel-id-format))
 #+end_src
 
 ** Open a zettel
@@ -305,7 +314,7 @@ When called interactively, open daily note for the date returned by
   "Return the zettel ID of current buffer as Org link format."
   (interactive)
   (let ((id (me:buffer-zettel-id)))
-    (format "[[zk:%s][%s]]" id id)))
+    (format "[[id:%s][%s]]" id id)))
 
 (keymap-global-set "C-c z l" (lambda ()
 			       (interactive)
@@ -325,7 +334,7 @@ zettel ID is resolved by calling `me:buffer-zettel-id'."
   (save-excursion
     (goto-char (point-min))
     (org-next-visible-heading 1)
-    (org-set-property "custom_id" (me:buffer-zettel-id))))
+    (org-set-property "ID" (me:buffer-zettel-id))))
 #+end_src
 
 *** Set date properties
@@ -366,220 +375,6 @@ Also update the 'created' property if one does not exist."
   (rg-run (me:buffer-zettel-id) "*" me:note-zk-directory t))
 
 (keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
-#+end_src
-
-* Org Mode
-
-Migrating from use-package
-
-** Key bindings
-
-#+begin_src elisp
-(use-package org
-  :bind (("C-c l" . org-store-link)
-	 ("C-c a" . org-agenda)
-	 ("C-c c" . org-capture)
-	 
-	 :map org-mode-map
-	 ("M-{" . org-backward-element)
-	 ("M-}" . org-forward-element)))
-#+end_src
-
-** Set Org directory to match my note taking system
-
-#+begin_src elisp
-(setq org-directory me:note-root-directory)
-#+end_src
-
-** Set blanks
-
-#+begin_src elisp
-(setq org-blank-before-new-entry '((heading . t) (plain-list-item auto)))
-#+end_src
-
-** Open markdown in Org
-
-#+begin_src elisp
-(add-to-list 'org-file-apps '("\\.md\\'" . emacs))
-#+end_src
-
-** Latex integration
-
-*** Use dvisvgm for rendering
-
-Dvisvgm configuration is patched for my environment...
-
-#+begin_src elisp
-(setq org-preview-latex-default-process 'dvisvgm)
-  
-(add-to-list 'org-preview-latex-process-alist
-	     '(dvisvgm :programs ("latex" "dvisvgm") :description "dvi > svg"
-		       :message
-		       "you need to install the programs: latex and dvisvgm."
-		       :image-input-type "dvi" :image-output-type "svg"
-		       :image-size-adjust (1.7 . 1.5) :latex-compiler
-		       ("latex -interaction nonstopmode -output-directory %o %f")
-		       :image-converter
-		       ("TEXMFCNF=\"/usr/local/texlive/2025:$TEXMFCNF\" dvisvgm --no-fonts --exact-bbox --scale=%S --output=%O --keep %f")))
-#+end_src
-
-*** Set latex scale
-
-#+begin_src elisp
-(plist-put org-format-latex-options :scale 1.5)
-#+end_src
-
-** Startup options
-
-*** Start with inline images
-
-#+begin_src elisp
-(setq org-startup-with-inline-images t)
-#+end_src
-
-** Link abbrevations
-
-#+begin_src elisp
-(setq org-link-abbrev-alist
-      `(("zk" . ,(expand-file-name "zk/%s.org" me:note-root-directory))
-	("media" . ,(expand-file-name "media/" me:note-root-directory))))
-#+end_src
-
-** Org-agenda
-
-*** Set files for agenda
-
-#+begin_src elisp
-(setq org-agenda-files (list me:note-root-directory
-			     (expand-file-name "buffers/" me:note-root-directory)
-			     (expand-file-name "projects/" me:note-root-directory)
-			     me:note-zk-directory))
-#+end_src
-
-*** Display agenda in current buffer
-
-#+begin_src elisp
-(setq org-agenda-window-setup 'current-buffer)
-#+end_src
-
-*** Restore windows after quit
-
-#+begin_src elisp
-(setq org-agenda-restore-windows-after-quit t)
-#+end_src
-
-*** Ignore entries after deadline
-
-#+begin_src elisp
-(setq org-agenda-todo-ignore-deadlines -1)
-#+end_src
-
-** Todo
-
-*** Todo keywords
-
-#+begin_src elisp
-(setq org-todo-keywords
-      '((sequence "TODO" "WORKING" "|" "DONE")))
-(setq org-todo-keyword-faces
-      '(("TODO" . "gold") ("IDEA" . "coral")
-	("WORKING" . "CadetBlue2")))
-#+end_src
-
-** Priority
-
-#+begin_src elisp
-(setq org-priority-lowest 68
-	org-priority-highest 65
-	org-priority-default 68)
-#+end_src
-
-** Capture templates
-
-*** Random thoughts (journaling)
-
-#+begin_src elisp
-(add-to-list 'org-capture-templates
-	     `("c" "Random thought"
-	       plain (function ,(lambda ()
-				  (me:note-open-daily (me:note-current-date))
-				  (goto-char (point-max))))
-	       "*** %T %?"
-	       :empty-lines-before 1))
-#+end_src
-
-*** Fleeting note
-
-#+begin_src elisp
-(add-to-list 'org-capture-templates
-	     `("f" "Fleeting note"
-	       entry (file ,(expand-file-name "fleeting.org" me:note-root-directory))
-	       "* IDEA %t %?"
-	       :empty-lines-before 1))
-#+end_src
-
-*** Todo item
-
-#+begin_src elisp
-(add-to-list 'org-capture-templates
-	     `("t" "Todo item"
-	       entry (file ,(expand-file-name "todo.org" me:note-root-directory))
-	       "* TODO %t %?"
-	       :prepend t
-	       :empty-lines-after 1))
-#+end_src
-
-*** Baekjoon problem
-
-#+begin_src elisp
-(add-to-list 'org-capture-template
-	     `("b" "Baekjoon problem"
-	      entry (file ,(expand-file-name "problems/baekjoon.org" me:note-root-directory))
-	      "* %^{id}. %^{title}
-
-[[https://www.acmicpc.net/problem/%\\1][Baekjoon]]
-
-,** Ideas
-
-%?"
-	      :jump-to-captured t))
-#+end_src
-** Babel
-
-*** Disable confirmation
-
-I know what I'm doing
-
-#+begin_src elisp
-(setq org-confirm-babel-evaluate nil)
-#+end_src
-
-*** Make the result keyword lowercased
-
-#+begin_src elisp
-(setq org-babel-results-keyword "results")
-#+end_src
-
-*** Remove source code indention
-
-#+begin_src elisp
-(setq org-edit-src-content-indentation 0)
-#+end_src
-
-** I don't know what it does
-
-todo
-
-#+begin_src elisp
-(setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-#+end_src
-
-* Org-roam
-
-
-
-#+begin_src elisp
-(use)
 #+end_src
 
 * Migration
@@ -639,8 +434,7 @@ The path to the lua filter is hardcoded. This could be improved.
 
 #+begin_src elisp
 (defvar me:pandoc-migration-command
-  "pandoc --wrap=preserve -f commonmark+task_lists+yaml_metadata_block -s
--t org --lua-filter=/Users/kimsaram32/me/myself/pandoc-filter.lua"
+  "pandoc --wrap=preserve -f commonmark+task_lists+yaml_metadata_block -s -t org --lua-filter=/Users/kimsaram32/me/myself/pandoc-filter.lua"
   "Command to use for `me:migrate-to-org'.")
 #+end_src
 
@@ -769,6 +563,308 @@ The default one is "python3".
 (add-hook 'c-mode-hook
 	  (lambda ()
 	    (setq c-basic-offset 2)))
+#+end_src
+
+* Org Mode
+
+Migrating from use-package
+
+#+begin_src elisp
+(require 'org)
+(require 'org-capture)
+#+end_src
+
+** Key bindings
+
+#+begin_src elisp
+(use-package org
+  :bind (("C-c l" . org-store-link)
+	 ("C-c a" . org-agenda)
+	 ("C-c c" . org-capture)
+	 
+	 :map org-mode-map
+	 ("M-{" . org-backward-element)
+	 ("M-}" . org-forward-element)))
+#+end_src
+
+** Set Org directory to match my note taking system
+
+#+begin_src elisp
+(setq org-directory me:note-root-directory)
+#+end_src
+
+** ID format
+
+Required for org-roam.
+
+#+begin_src elisp
+(setq org-id-ts-format me:zettel-id-format)
+
+(setq org-id-method 'ts)
+#+end_src
+
+** Set blanks
+
+#+begin_src elisp
+(setq org-blank-before-new-entry '((heading . t) (plain-list-item auto)))
+#+end_src
+
+** Open markdown in Org
+
+#+begin_src elisp
+(add-to-list 'org-file-apps '("\\.md\\'" . emacs))
+#+end_src
+
+** Latex integration
+
+*** LuaLaTeX
+
+#+begin_src elisp
+(setq org-latex-pdf-process
+  '("lualatex -shell-escape -interaction nonstopmode %f"
+    "lualatex -shell-escape -interaction nonstopmode %f")) 
+
+(setq luamagick '(luamagick :programs ("lualatex" "convert")
+       :description "pdf > png"
+       :message "you need to install lualatex and imagemagick."
+       :use-xcolor t
+       :image-input-type "pdf"
+       :image-output-type "png"
+       :image-size-adjust (1.0 . 1.0)
+       :latex-compiler ("lualatex -interaction nonstopmode -output-directory %o %f")
+       :image-converter ("convert -density %D -trim -antialias %f -quality 100 %O")))
+
+(add-to-list 'org-preview-latex-process-alist luamagick)
+#+end_src
+
+*** Use dvisvgm for rendering
+
+Dvisvgm configuration is patched for my environment...
+
+#+begin_src elisp
+(setq org-preview-latex-default-process 'dvisvgm)
+  
+(add-to-list 'org-preview-latex-process-alist
+	     '(dvisvgm :programs ("latex" "dvisvgm") :description "dvi > svg"
+		       :message
+		       "you need to install the programs: latex and dvisvgm."
+		       :image-input-type "dvi" :image-output-type "svg"
+		       :image-size-adjust (1.7 . 1.5) :latex-compiler
+		       ("latex -interaction nonstopmode -output-directory %o %f")
+		       :image-converter
+		       ("TEXMFCNF=\"/usr/local/texlive/2025:$TEXMFCNF\" dvisvgm --no-fonts --exact-bbox --scale=%S --output=%O --keep %f")))
+#+end_src
+
+*** Set latex scale
+
+#+begin_src elisp
+(plist-put org-format-latex-options :scale 2)
+#+end_src
+
+** Startup options
+
+*** Start with inline images
+
+#+begin_src elisp
+(setq org-startup-with-inline-images t)
+#+end_src
+
+** Link abbrevations
+
+#+begin_src elisp
+(setq org-link-abbrev-alist
+      `(("zk" . ,(expand-file-name "id:%s" me:note-root-directory))
+	("media" . ,(expand-file-name "media/" me:note-root-directory))))
+#+end_src
+
+** Org-agenda
+
+*** Set files for agenda
+
+#+begin_src elisp
+(setq org-agenda-files (list me:note-root-directory
+			     (expand-file-name "buffers/" me:note-root-directory)
+			     (expand-file-name "projects/" me:note-root-directory)
+			     me:note-zk-directory))
+#+end_src
+
+*** Display agenda in current buffer
+
+#+begin_src elisp
+(setq org-agenda-window-setup 'current-buffer)
+#+end_src
+
+*** Restore windows after quit
+
+#+begin_src elisp
+(setq org-agenda-restore-windows-after-quit t)
+#+end_src
+
+*** Periodic display options
+
+#+begin_src elisp
+(setq org-agenda-span 14)
+#+end_src
+
+*** Todo display options
+
+#+begin_src elisp
+(setq org-agenda-todo-ignore-deadlines -1)
+#+end_src
+
+** Todo
+
+*** Todo keywords
+
+#+begin_src elisp
+(setq org-todo-keywords
+      '((sequence "TODO" "WORKING" "|" "DONE")))
+(setq org-todo-keyword-faces
+      '(("TODO" . "gold") ("IDEA" . "coral")
+	("WORKING" . "CadetBlue2")))
+#+end_src
+
+** Priority
+
+#+begin_src elisp
+(setq org-priority-lowest 68
+	org-priority-highest 65
+	org-priority-default 68)
+#+end_src
+
+** Capture templates
+
+*** Random thoughts (journaling)
+
+#+begin_src elisp
+(add-to-list 'org-capture-templates
+	     `("c" "Random thought"
+	       plain (function ,(lambda ()
+				  (me:note-open-daily (me:note-current-date))
+				  (goto-char (point-max))))
+	       "*** %T %?"
+	       :empty-lines-before 1))
+#+end_src
+
+*** Fleeting note
+
+#+begin_src elisp
+(add-to-list 'org-capture-templates
+	     `("f" "Fleeting note"
+	       entry (file ,(expand-file-name "fleeting.org" me:note-root-directory))
+	       "* IDEA %t %?"
+	       :empty-lines-before 1))
+#+end_src
+
+*** Todo item
+
+#+begin_src elisp
+(add-to-list 'org-capture-templates
+	     `("t" "Todo item"
+	       entry (file ,(expand-file-name "todo.org" me:note-root-directory))
+	       "* TODO %t %?"
+	       :prepend t
+	       :empty-lines-after 1))
+#+end_src
+
+*** Baekjoon problem
+
+#+begin_src elisp
+(add-to-list 'org-capture-templates
+	     `("b" "Baekjoon problem"
+	      entry (file ,(expand-file-name "problems/baekjoon.org" me:note-root-directory))
+	      "* %^{id}. %^{title}
+
+[[https://www.acmicpc.net/problem/%\\1][Baekjoon]]
+
+,** Ideas
+
+%?"
+	      :jump-to-captured t))
+#+end_src
+** Editing source code
+
+*** Window setup
+
+#+begin_src elisp
+(setq org-src-window-setup 'current-window)
+#+end_src
+
+*** Remove source code indention
+
+#+begin_src elisp
+(setq org-edit-src-content-indentation 0)
+#+end_src
+
+** Babel
+*** Disable confirmation
+
+I know what I'm doing
+
+#+begin_src elisp
+(setq org-confirm-babel-evaluate nil)
+#+end_src
+
+
+*** Make the result keyword lowercased
+
+#+begin_src elisp
+(setq org-babel-results-keyword "results")
+#+end_src
+
+** I don't know what it does
+
+todo
+
+#+begin_src elisp
+(setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+#+end_src
+
+* Org-journal
+
+#+begin_src elisp
+(require 'org-journal)
+#+end_src
+
+* Org-roam
+
+#+begin_src elisp
+(require 'org-roam)
+#+end_src
+
+** Link format
+
+#+begin_src elisp
+(setq org-roam-node-formatter "${id}")
+#+end_src
+
+** org-roam-directory
+#+begin_src elisp
+(setq org-roam-directory me:note-zk-directory)
+#+end_src
+
+** Key bindings
+
+#+begin_src elisp
+(keymap-global-set "C-c n i" 'org-roam-node-insert)
+(keymap-global-set "C-c n f" 'org-roam-node-find)
+(keymap-global-set "C-c n l" 'org-roam-buffer-toggle)
+#+end_src
+
+** Capture templates
+
+#+begin_src elisp
+(setq org-roam-capture-templates
+      '(("d" "default" plain "%?"
+	 :target (file+head "%<%Y%m%d%H%M>.org" "
+,* ${title}")
+	:unnarrowed t)))
+#+end_src
+
+** File path for extracted nodes
+
+#+begin_src elisp
+(setq org-roam-extract-new-file-path "%<%Y%m%d%H%M>")
 #+end_src
 
 * Rg
