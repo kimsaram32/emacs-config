@@ -593,7 +593,9 @@ Migrating from use-package
 (setq org-directory me:note-root-directory)
 #+end_src
 
-** ID format
+** ID (integration with org-roam)
+
+*** ID format
 
 Required for org-roam.
 
@@ -601,6 +603,12 @@ Required for org-roam.
 (setq org-id-ts-format me:zettel-id-format)
 
 (setq org-id-method 'ts)
+#+end_src
+
+*** Disable global tracking
+
+#+begin_src elisp
+(setq org-id-track-globally nil)
 #+end_src
 
 ** Set blanks
@@ -637,13 +645,11 @@ Required for org-roam.
 (add-to-list 'org-preview-latex-process-alist luamagick)
 #+end_src
 
-*** Use dvisvgm for rendering
+*** dvisvgm
 
 Dvisvgm configuration is patched for my environment...
 
 #+begin_src elisp
-(setq org-preview-latex-default-process 'dvisvgm)
-  
 (add-to-list 'org-preview-latex-process-alist
 	     '(dvisvgm :programs ("latex" "dvisvgm") :description "dvi > svg"
 		       :message
@@ -655,7 +661,13 @@ Dvisvgm configuration is patched for my environment...
 		       ("TEXMFCNF=\"/usr/local/texlive/2025:$TEXMFCNF\" dvisvgm --no-fonts --exact-bbox --scale=%S --output=%O --keep %f")))
 #+end_src
 
-*** Set latex scale
+*** Use dvisvgm for inline preview
+
+#+begin_src elisp
+(setq org-preview-latex-default-process 'dvisvgm)
+#+end_src
+
+*** Preview scaling
 
 #+begin_src elisp
 (plist-put org-format-latex-options :scale 2)
@@ -675,6 +687,12 @@ Dvisvgm configuration is patched for my environment...
 (setq org-link-abbrev-alist
       `(("zk" . ,(expand-file-name "id:%s" me:note-root-directory))
 	("media" . ,(expand-file-name "media/" me:note-root-directory))))
+#+end_src
+
+** Deadine warning days
+
+#+begin_src elisp
+(setq org-deadline-warning-days 21)
 #+end_src
 
 ** Org-agenda
@@ -753,7 +771,19 @@ Dvisvgm configuration is patched for my environment...
 	     `("f" "Fleeting note"
 	       entry (file ,(expand-file-name "fleeting.org" me:note-root-directory))
 	       "* IDEA %t %?"
+	       :prepend t
 	       :empty-lines-before 1))
+#+end_src
+
+*** Event
+
+#+begin_src elisp
+(add-to-list 'org-capture-templates
+	     `("e" "Event"
+	       entry (file ,(expand-file-name "event.org" me:note-root-directory))
+	       "* %t %?"
+	       :prepend t
+	       :empty-lines-after 1))
 #+end_src
 
 *** Todo item
@@ -832,6 +862,20 @@ todo
 (require 'org-roam)
 #+end_src
 
+** Key bindings
+
+#+begin_src elisp
+(keymap-global-set "C-c n i" 'org-roam-node-insert)
+(keymap-global-set "C-c n f" 'org-roam-node-find)
+(keymap-global-set "C-c n l" 'org-roam-buffer-toggle)
+#+end_src
+
+** Autosync mode
+
+#+begin_src elisp
+(org-roam-db-autosync-mode)
+#+end_src
+
 ** Link format
 
 #+begin_src elisp
@@ -843,12 +887,10 @@ todo
 (setq org-roam-directory me:note-zk-directory)
 #+end_src
 
-** Key bindings
+** org-roam-graph
 
 #+begin_src elisp
-(keymap-global-set "C-c n i" 'org-roam-node-insert)
-(keymap-global-set "C-c n f" 'org-roam-node-find)
-(keymap-global-set "C-c n l" 'org-roam-buffer-toggle)
+(setq org-roam-graph-viewer "/Applications/Firefox.app/Contents/MacOS/firefox")
 #+end_src
 
 ** Capture templates
