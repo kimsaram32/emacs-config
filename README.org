@@ -30,29 +30,6 @@
 (put 'scroll-left 'disabled nil)
 #+end_src
 
-** Visual line mode
-
-#+begin_src elisp
-(visual-line-mode)
-#+end_src
-
-** Mark ring
-
-#+begin_src elisp
-(setq set-mark-command-repeat-pop t)
-#+end_src
-
-** Insert quotes more easily
-
-#+begin_src elisp
-(defun me:insert-quotes (&optional arg)
-  "Like `insert-parentheses`, but for quotes."
-  (interactive "P")
-  (insert-pair arg ?\" ?\"))
-
-(keymap-global-set "M-\"" 'me:insert-quotes)
-#+end_src
-
 * Text
 
 ** Font faces
@@ -135,11 +112,40 @@ to prevent resizing windows when changing fonts.
 #+end_src
 
 * Editing text
+** Visual line mode
+
+#+begin_src elisp
+(visual-line-mode)
+#+end_src
 
 ** Sentences should end with one space
 
 #+begin_src elisp
 (setq sentence-end-double-space nil)
+#+end_src
+
+** Mark ring
+
+#+begin_src elisp
+(setq set-mark-command-repeat-pop t)
+#+end_src
+
+** Insert quotes more easily
+
+#+begin_src elisp
+(defun me:insert-quotes (&optional arg)
+  "Like `insert-parentheses`, but for quotes."
+  (interactive "P")
+  (insert-pair arg ?\" ?\"))
+
+(keymap-global-set "M-\"" 'me:insert-quotes)
+#+end_src
+
+** Delete pair
+
+#+begin_src elisp
+(setq delete-pair-blink-delay 0)
+(keymap-global-set "C-M-z" 'delete-pair)
 #+end_src
 
 * Buffers
@@ -171,9 +177,9 @@ to prevent resizing windows when changing fonts.
 
 * Note taking
 
-** Constants
+Most functions are moved into org-journal
 
-*** Directories
+** Directories
 
 #+begin_src elisp
 (defconst me:note-root-directory "~/me/myself/"
@@ -192,7 +198,7 @@ to prevent resizing windows when changing fonts.
   "Directory for template notes.")
 #+end_src
 
-*** Starting hour of a day
+** Starting hour of a day
 
 #+begin_src elisp
 (defconst me:note-day-start-hour 3 "The starting hour of a day for notes.")
@@ -213,36 +219,9 @@ today's date."
     (encode-time (append (list 0 0 0 day) (seq-subseq time 4)))))
 #+end_src
 
-** Get file name for daily note
-
-#+begin_src elisp
-(defun me:note-daily-name (date)
-  "Return file name of the daily note for DATE."
-  (expand-file-name
-   (format-time-string "%Y/%m/%Y-%m-%d.org" date)
-   me:note-periodic-directory))
-#+end_src
-
-** Open daily note
-
-#+begin_src elisp
-(defun me:note-open-daily (date)
-  "Open daily note for DATE in current window.
-If file did not exist, insert template content.
-
-When called interactively, open daily note for the date returned by
-`me:note-current-date'."
-  (interactive (list (me:note-current-date)))
-  (let* ((path (me:note-daily-name date))
-	 (exists (file-exists-p path)))
-    (find-file path)
-    (unless exists
-      (insert-file-contents (expand-file-name "daily.org" me:note-template-directory)))))
-
-(keymap-global-set "C-c n d" 'me:note-open-daily)
-#+end_src
-
 * Zettelkasten
+
+Needs cleanup after configuring org-roam...
 
 ** Predicate for zettel file names
 
@@ -379,6 +358,19 @@ Also update the 'created' property if one does not exist."
 
 * Migration
 
+** Migrate inline latex
+
+#+begin_src elisp
+(defun me:migrate-latex ()
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "\\$\\(.+?\\)\\$" nil t)
+      (replace-match "\\\\(\\1\\\\)"))))
+
+(keymap-global-set "C-c m l" 'me:migrate-latex)
+#+end_src
+
 ** Check if the current line is empty
 
 Helper function for migration command
@@ -494,7 +486,7 @@ Perform the following transformations:
       (when is-zk
 	(me:set-zettel-id-property)
 	(save-excursion
-	  (replace-regexp "\\[\\[\\([0-9]+\\)]]" "[[zk:\\1][\\1]]"))))))
+	  (replace-regexp "\\[\\[\\([0-9]+\\)]]" "[[id:\\1][\\1]]"))))))
 #+end_src
 
 *** Change verbatim to code
@@ -538,7 +530,8 @@ strings to them.
 	  (while (search-forward me:markdown-indicator-string nil t)
 	    (replace-match "" nil t))
 	  (me:migrate-markdown-to-org))
-      (me:migrate-org-properties))))
+      (me:migrate-org-properties)
+      (me:migrate-latex))))
 
 (keymap-global-set "C-c m m" 'me:migrate-dwim)
 #+end_src
@@ -587,17 +580,26 @@ Migrating from use-package
 	 ("M-}" . org-forward-element)))
 #+end_src
 
-** Set Org directory to match my note taking system
+** Directory
 
 #+begin_src elisp
 (setq org-directory me:note-root-directory)
 #+end_src
 
-** ID (integration with org-roam)
+** Starting hour of a day
+
+- Sync with the core note taking system.
+- Also used in org-journal.
+
+#+begin_src elisp
+(setq org-extend-today-until me:note-day-start-hour)
+#+end_src
+
+** ID
+
+Integration with org-roam
 
 *** ID format
-
-Required for org-roam.
 
 #+begin_src elisp
 (setq org-id-ts-format me:zettel-id-format)
@@ -611,7 +613,7 @@ Required for org-roam.
 (setq org-id-track-globally nil)
 #+end_src
 
-** Set blanks
+** Set blanks before new entries
 
 #+begin_src elisp
 (setq org-blank-before-new-entry '((heading . t) (plain-list-item auto)))
@@ -754,12 +756,17 @@ Dvisvgm configuration is patched for my environment...
 
 *** Random thoughts (journaling)
 
+Integrate with org-journal.
+
 #+begin_src elisp
+(defun me:org-journal-find-location ()
+  (org-journal-new-entry t)
+  (goto-char (point-max))
+  (recenter-top-bottom 0))
+
 (add-to-list 'org-capture-templates
 	     `("c" "Random thought"
-	       plain (function ,(lambda ()
-				  (me:note-open-daily (me:note-current-date))
-				  (goto-char (point-max))))
+	       plain (function me:org-journal-find-location)
 	       "*** %T %?"
 	       :empty-lines-before 1))
 #+end_src
@@ -835,7 +842,6 @@ I know what I'm doing
 (setq org-confirm-babel-evaluate nil)
 #+end_src
 
-
 *** Make the result keyword lowercased
 
 #+begin_src elisp
@@ -856,6 +862,53 @@ todo
 (require 'org-journal)
 #+end_src
 
+** Key bindings
+
+Custom lambda functions for opening today's journal file,
+since creation of new entries are handled by org-capture.
+
+#+begin_src elisp
+(setq org-journal-prefix-key "C-c j ")
+(keymap-global-set "C-c j j" (lambda ()
+			       (interactive)
+			       (org-journal-new-entry t)))
+#+end_src
+
+** Directory and files
+
+#+begin_src elisp
+(setq org-journal-dir me:note-periodic-directory)
+(setq org-journal-file-format "%Y/%m/%Y-%m-%d.org")
+#+end_src
+
+** Date format
+
+#+begin_src elisp
+(setq org-journal-date-format "%Y-%m-%d")
+#+end_src
+
+** Time entry format
+
+#+begin_src elisp
+(setq org-journal-time-prefix "*** ")
+(setq org-journal-time-format "<%R>")
+#+end_src
+
+** Opening entries
+
+#+begin_src elisp
+(setq org-journal-find-file 'find-file)
+#+end_src
+
+** Disable carry over
+
+Long-term todo items are already handled by my agenda workflow.
+No need for carry overs.
+
+#+begin_src elisp
+(setq org-journal-carryover-items "")
+#+end_src
+
 * Org-roam
 
 #+begin_src elisp
@@ -870,6 +923,12 @@ todo
 (keymap-global-set "C-c n l" 'org-roam-buffer-toggle)
 #+end_src
 
+** Directory
+
+#+begin_src elisp
+(setq org-roam-directory me:note-zk-directory)
+#+end_src
+
 ** Autosync mode
 
 #+begin_src elisp
@@ -880,11 +939,6 @@ todo
 
 #+begin_src elisp
 (setq org-roam-node-formatter "${id}")
-#+end_src
-
-** org-roam-directory
-#+begin_src elisp
-(setq org-roam-directory me:note-zk-directory)
 #+end_src
 
 ** org-roam-graph
