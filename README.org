@@ -177,7 +177,7 @@ to prevent resizing windows when changing fonts.
 
 * Note taking
 
-Most functions are moved into org-journal
+Most function moved into org-journal
 
 ** Directories
 
