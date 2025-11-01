@@ -302,8 +302,15 @@ Needs cleanup after configuring org-roam...
 
 ** Managing properties
 
-*** Set the ID property
+*** helper: Goto top level heading
+#+begin_src elisp
+(defun me:org-goto-top-level-heading ()
+  "Goto upmost heading."
+  (interactive)
+  (while (org-up-heading-safe)))
+#+end_src
 
+*** Set the ID property
 #+begin_src elisp
 (defun me:set-zettel-id-property ()
   "Set zettel ID as the value of 'custom_id' property to current buffer.
@@ -311,13 +318,11 @@ Needs cleanup after configuring org-roam...
 zettel ID is resolved by calling `me:buffer-zettel-id'."
   (interactive)
   (save-excursion
-    (goto-char (point-min))
-    (org-next-visible-heading 1)
+    (me:org-goto-top-level-heading)
     (org-set-property "ID" (me:buffer-zettel-id))))
 #+end_src
 
 *** Set date properties
-
 #+begin_src elisp
 (defun me:set-date-properties ()
   "Update the 'updated' property of current buffer as current date.
@@ -325,8 +330,7 @@ Also update the 'created' property if one does not exist."
   (interactive)
   (let ((date-string (format-time-string "%Y-%m-%d" (me:note-current-date))))
     (save-excursion
-      (goto-char (point-min))
-      (org-next-visible-heading 1)
+      (me:org-goto-top-level-heading)
       (unless (org-entry-get (point) "created")
 	(org-set-property "created" date-string))
       (org-set-property "updated" date-string)))
@@ -334,7 +338,6 @@ Also update the 'created' property if one does not exist."
 #+end_src
 
 *** Set all zettel properties
-
 #+begin_src elisp
 (defun me:set-zettel-properties ()
   "Call `me:set-date-properties' and `me:set-zettel-id-property'."
@@ -559,7 +562,6 @@ The default one is "python3".
 #+end_src
 
 * Org Mode
-
 Migrating from use-package
 
 #+begin_src elisp
@@ -613,10 +615,15 @@ Integration with org-roam
 (setq org-id-track-globally nil)
 #+end_src
 
-** Set blanks before new entries
+** New entry blanks
 
 #+begin_src elisp
 (setq org-blank-before-new-entry '((heading . t) (plain-list-item auto)))
+#+end_src
+
+** Indent mode
+#+begin_src elisp
+(setq org-startup-indented t)
 #+end_src
 
 ** Open markdown in Org
@@ -675,14 +682,12 @@ Dvisvgm configuration is patched for my environment...
 (plist-put org-format-latex-options :scale 2)
 #+end_src
 
-** Startup options
-
-*** Start with inline images
-
+** Image options
 #+begin_src elisp
 (setq org-startup-with-inline-images t)
+(setq org-image-actual-width nil)
+(setq org-image-max-width 400)
 #+end_src
-
 ** Link abbrevations
 
 #+begin_src elisp
@@ -702,21 +707,18 @@ Dvisvgm configuration is patched for my environment...
 *** Set files for agenda
 
 #+begin_src elisp
-(setq org-agenda-files (list me:note-root-directory
-			     (expand-file-name "buffers/" me:note-root-directory)
-			     (expand-file-name "projects/" me:note-root-directory)
-			     me:note-zk-directory))
+(setq me:org-agenda-files-basic (list me:note-root-directory
+				      (expand-file-name "buffers/" me:note-root-directory)
+				      (expand-file-name "projects/" me:note-root-directory)))
+(setq org-agenda-files (append
+			me:org-agenda-files-basic
+			(list me:note-zk-directory)))
 #+end_src
 
-*** Display agenda in current buffer
+*** Window setup
 
 #+begin_src elisp
 (setq org-agenda-window-setup 'current-buffer)
-#+end_src
-
-*** Restore windows after quit
-
-#+begin_src elisp
 (setq org-agenda-restore-windows-after-quit t)
 #+end_src
 
@@ -730,6 +732,15 @@ Dvisvgm configuration is patched for my environment...
 
 #+begin_src elisp
 (setq org-agenda-todo-ignore-deadlines -1)
+#+end_src
+
+*** Custom daily agenda
+
+#+begin_src elisp
+(setq org-agenda-custom-commands
+      '(("d" "Daily agenda" agenda "TODO"
+	 ((org-agenda-files me:org-agenda-files-basic)
+	  (org-agenda-span 'day)))))
 #+end_src
 
 ** Todo
@@ -767,7 +778,7 @@ Integrate with org-journal.
 (add-to-list 'org-capture-templates
 	     `("c" "Random thought"
 	       plain (function me:org-journal-find-location)
-	       "*** %T %?"
+	       "** %T %?"
 	       :empty-lines-before 1))
 #+end_src
 
