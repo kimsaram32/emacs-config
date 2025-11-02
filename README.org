@@ -3,48 +3,43 @@
 #+property: header-args:elisp :results silent
 
 * Packages
-
 ** Use Melpa
-
 #+begin_src elisp
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 #+end_src
-
 ** Setup Custom
-
 #+begin_src elisp
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file)
 #+end_src
-
 * exec-path-from-shell
-
 #+begin_src elisp
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
 #+end_src
-
 * Enable disabled commands
-
 #+begin_src elisp
 (put 'scroll-left 'disabled nil)
 #+end_src
+* Apropos key bindings
+#+begin_src elisp
+(unbind-key "a" help-map)
 
+(keymap-set help-map "a a" 'apropos-command)
+(keymap-set help-map "a f" 'apropos-function)
+(keymap-set help-map "a v" 'apropos-variable)
+(keymap-set help-map "a u" 'apropos-user-option)
+(keymap-set help-map "a l" 'apropos-library)
+#+end_src
 * Text
-
 ** Font faces
-
 *** Enable fixed windows
-
 Before customizing fonts, temporarily enable fixed windows
 to prevent resizing windows when changing fonts.
-
 #+begin_src elisp
 (setq-default window-size-fixed t)
 #+end_src
-
 *** Font faces
-
 #+begin_src elisp
 (set-face-attribute 'default nil
 		    :height 160
@@ -53,64 +48,44 @@ to prevent resizing windows when changing fonts.
 		    :height 170
 		    :family "Helvetica Neue")
 #+end_src
-
 *** Disable fixed windows
-
 #+begin_src elisp
 (setq-default window-size-fixed nil)
 #+end_src
-
 ** Line height
-
 #+begin_src elisp
 (setq-default line-spacing 2)
 #+end_src
-
 * UI
-
 ** Disable menu bar mode
-
 #+begin_src elisp
 (menu-bar-mode -1)
 #+end_src
-
 ** Disable tool bar mode
-
 #+begin_src elisp
 (tool-bar-mode -1)
 #+end_src
-
 ** Disable scroll bar mode
-
 #+begin_src elisp
 (scroll-bar-mode -1)
 #+end_src
-
 ** Set transparent title bars
-
 #+begin_src elisp
 (set-frame-parameter nil 'ns-transparent-toolbar t)
 (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
 #+end_src
-
 ** Clear title bar text
-
 #+begin_src elisp
 (setq-default frame-title-format "")
 #+end_src
-
 ** Tab bar mode
-
 #+begin_src elisp
 (tab-bar-mode)
-
 (keymap-global-set "C-c <SPC>" tab-prefix-map)
 (keymap-set tab-prefix-map "]" 'tab-next)
 (keymap-set tab-prefix-map "[" 'tab-previous)
-
 (setq tab-bar-auto-width-max '((140) 20))
 #+end_src
-
 * Editing text
 ** Visual line mode
 
@@ -149,63 +124,49 @@ to prevent resizing windows when changing fonts.
 #+end_src
 
 * Buffers
-
 ** Default scratch buffer message
-
 #+begin_src elisp
 (setq initial-scratch-message "\
 ;; Hi this is a scratch buffer
 
 ")
 #+end_src
-
 ** Short for switching previous/next buffer
-
 #+begin_src elisp
 (keymap-global-set "C-c b l" 'previous-buffer)
 (keymap-global-set "C-c b r" 'next-buffer)
 #+end_src
-
 ** Helper function: delete current buffer's file
-
 #+begin_src elisp
 (defun me:delete-current-file ()
   "Delete current buffer's file."
   (interactive)
   (delete-file (buffer-file-name)))
 #+end_src
-
 * Note taking
-
-Most function moved into org-journal
-
+Most functions are moved into org-journal
 ** Directories
-
 #+begin_src elisp
-(defconst me:note-root-directory "~/me/myself/"
-  "Root directory for notes.")
+  (defconst me:note-root-directory (expand-file-name "~/me/myself/")
+    "Root directory for notes.")
 
-(defconst me:note-periodic-directory
-  (file-name-concat me:note-root-directory "life/")
-  "Directory for periodic notes.")
+  (defconst me:note-periodic-directory
+    (file-name-concat me:note-root-directory "life/")
+    "Directory for periodic notes.")
 
-(defconst me:note-zk-directory
-  (file-name-concat me:note-root-directory "zk/")
-  "Directory for Zettelkasten.")
+  (defconst me:note-zk-directory
+    (file-name-concat me:note-root-directory "zk/")
+    "Directory for Zettelkasten.")
 
-(defconst me:note-template-directory
-  (file-name-concat me:note-root-directory "_templates")
-  "Directory for template notes.")
+  (defconst me:note-template-directory
+    (file-name-concat me:note-root-directory "_templates")
+    "Directory for template notes.")
 #+end_src
-
 ** Starting hour of a day
-
 #+begin_src elisp
 (defconst me:note-day-start-hour 3 "The starting hour of a day for notes.")
 #+end_src
-
 ** Get current day for the note system
-
 #+begin_src elisp
 (defun me:note-current-date ()
   "Return current date for the note system. If the time is before
@@ -218,151 +179,8 @@ today's date."
 		current-day)))
     (encode-time (append (list 0 0 0 day) (seq-subseq time 4)))))
 #+end_src
-
-* Zettelkasten
-
-Needs cleanup after configuring org-roam...
-
-** Predicate for zettel file names
-
-#+begin_src elisp
-(defun me:is-zettel-name-p (name)
-  "Return t if NAME is a file name to a zettel. else return nill."
-  (string-suffix-p "zk/" (file-name-directory name)))
-#+end_src
-
-** Clear zettel buffers
-
-#+begin_src elisp
-(defun me:clear-zettels ()
-  "Clear all Zettel buffers."
-  (interactive)
-  (mapc (lambda (x)
-	  (if-let ((file-name (buffer-file-name x)))
-	      (when (me:is-zettel-name-p file-name)
-		(with-current-buffer x
-		  (save-buffer)
-		  (kill-buffer)))))
-	(buffer-list)))
-
-(keymap-global-set "C-c z c" 'me:clear-zettels)
-#+end_src
-
-** Zettel id format
-
-#+begin_src elisp
-(defconst me:zettel-id-format
-  "%Y%m%d%H%M"
-  "The format for zettel IDs.")
-#+end_src
-
-** Get zettel timestamp
-
-#+begin_src elisp
-(defun me:get-zettel-timestamp ()
-  "Get zettel timestamp for current time."
-  (format-time-string me:zettel-id-format))
-#+end_src
-
-** Open a zettel
-
-#+begin_src elisp
-(defun me:open-zettel ()
-  "Open a zettel file."
-  (interactive)
-  (find-file (file-name-with-extension (expand-file-name (me:get-zettel-timestamp)
-							 me:note-zk-directory)
-				       ".org")))
-
-(keymap-global-set "C-c z n" 'me:open-zettel)
-#+end_src
-
-** Get zettel id for current buffer
-
-#+begin_src elisp
-(defun me:buffer-zettel-id ()
-  "Return the zettel ID of current buffer."
-  (interactive)
-  (file-name-base (buffer-file-name)))
-#+end_src
-
-** Get zettel id for current buffer, but as a link format
-
-#+begin_src elisp
-(defun me:buffer-zettel-id-as-link ()
-  "Return the zettel ID of current buffer as Org link format."
-  (interactive)
-  (let ((id (me:buffer-zettel-id)))
-    (format "[[id:%s][%s]]" id id)))
-
-(keymap-global-set "C-c z l" (lambda ()
-			       (interactive)
-			       (kill-new (me:buffer-zettel-id-as-link))))
-#+end_src
-
-** Managing properties
-
-*** helper: Goto top level heading
-#+begin_src elisp
-(defun me:org-goto-top-level-heading ()
-  "Goto upmost heading."
-  (interactive)
-  (while (org-up-heading-safe)))
-#+end_src
-
-*** Set the ID property
-#+begin_src elisp
-(defun me:set-zettel-id-property ()
-  "Set zettel ID as the value of 'custom_id' property to current buffer.
-
-zettel ID is resolved by calling `me:buffer-zettel-id'."
-  (interactive)
-  (save-excursion
-    (me:org-goto-top-level-heading)
-    (org-set-property "ID" (me:buffer-zettel-id))))
-#+end_src
-
-*** Set date properties
-#+begin_src elisp
-(defun me:set-date-properties ()
-  "Update the 'updated' property of current buffer as current date.
-Also update the 'created' property if one does not exist."
-  (interactive)
-  (let ((date-string (format-time-string "%Y-%m-%d" (me:note-current-date))))
-    (save-excursion
-      (me:org-goto-top-level-heading)
-      (unless (org-entry-get (point) "created")
-	(org-set-property "created" date-string))
-      (org-set-property "updated" date-string)))
-  (message "Set date properties"))
-#+end_src
-
-*** Set all zettel properties
-#+begin_src elisp
-(defun me:set-zettel-properties ()
-  "Call `me:set-date-properties' and `me:set-zettel-id-property'."
-  (interactive)
-  (me:set-date-properties)
-  (me:set-zettel-id-property))
-
-(keymap-global-set "C-c z u" 'me:set-zettel-properties)
-#+end_src
-
-** Search for backlinks
-
-#+begin_src elisp
-(defun me:zettel-search-backlinks ()
-  "Search for ZK backlinks for current buffer via `rg'."
-  (interactive)
-  (rg-run (me:buffer-zettel-id) "*" me:note-zk-directory t))
-
-(keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
-#+end_src
-
 * Migration
-
 ** Migrate inline latex
-
 #+begin_src elisp
 (defun me:migrate-latex ()
   (interactive)
@@ -370,14 +188,10 @@ Also update the 'created' property if one does not exist."
     (goto-char (point-min))
     (while (re-search-forward "\\$\\(.+?\\)\\$" nil t)
       (replace-match "\\\\(\\1\\\\)"))))
-
 (keymap-global-set "C-c m l" 'me:migrate-latex)
 #+end_src
-
 ** Check if the current line is empty
-
 Helper function for migration command
-
 #+begin_src elisp
 (defun is-empty-line-p ()
   "Return t if current line only includes whitespace, else return
@@ -386,15 +200,13 @@ nil."
         (buffer-substring (line-beginning-position)
                           (line-end-position))))))
 #+end_src
-
 ** Migrate old Org mode documents
-
 #+begin_src elisp
 (defun me:migrate-org-properties ()
   "Migrate current old Org document to follow the new format. Specifically:
-
 - move incorrect buffer options (created and updated) into properties.
-- if ZK, call `me:set-zettel-id-property'."
+- if ZK, call `me:set-zettel-id-property'.
+- Move filetags into entry tags."
   (interactive)
   (save-excursion
     (goto-char (point-min))
@@ -407,14 +219,19 @@ nil."
 			   (let ((val (match-string 1)))
 			     (beginning-of-line)
 			     (delete-line)
+			     val)))
+	  (filetags (and (re-search-forward "^#\\+filetags: \\(.+\\)$" nil t)
+			   (let ((val (match-string 1)))
+			     (beginning-of-line)
+			     (delete-line)
 			     val))))
       (org-next-visible-heading 1)
       (when created-at (org-set-property "created" created-at))
-      (when updated-at (org-set-property "updated" updated-at)))
+      (when updated-at (org-set-property "updated" updated-at))
+      (when filetags (org-set-tags (string-replace "-" "_" filetags))))
     (me:set-zettel-id-property)))
 #+end_src
 ** Migration from markdown
-
 Previously, I used plain markdown documents for note taking.
 Now I have to migrate from it.
 
@@ -422,9 +239,7 @@ I chose incremental migration. When I see a markdown note, I
 explicitly call the migration command to convert to Org format. I
 wanted more fine-grained control over my notes, so I needed to verify
 the correctness of the conversion result.
-
 *** Pandoc migration command
-
 The path to the lua filter is hardcoded. This could be improved.
 
 #+begin_src elisp
@@ -432,16 +247,12 @@ The path to the lua filter is hardcoded. This could be improved.
   "pandoc --wrap=preserve -f commonmark+task_lists+yaml_metadata_block -s -t org --lua-filter=/Users/kimsaram32/me/myself/pandoc-filter.lua"
   "Command to use for `me:migrate-to-org'.")
 #+end_src
-
 *** Convert from markdown to Org
-
 #+begin_src elisp
 (defun me:migrate-markdown-to-org ()
   "Convert current markdown file into Org Mode document, using Pandoc.
 Open the converted document in current buffer.
-
 Perform the following transformations:
-
 - move frontmatters (created and updated) into properties.
 - if ZK, transform links and add custom_id property."
   (interactive)
@@ -454,7 +265,6 @@ Perform the following transformations:
 	   (updated-at (when (re-search-forward "^updated: \\(.+\\)$" nil t)
 			 (match-string 1)))
 	   (is-zk (me:is-zettel-name-p input-file-name)))
-
       (save-buffer)
       
       (with-temp-buffer
@@ -462,7 +272,6 @@ Perform the following transformations:
 	(let ((temp-buffer (current-buffer)))
 	  (with-current-buffer input-buffer
 	    (replace-buffer-contents temp-buffer))))
-
       (goto-char (point-min))
       (when is-zk
 	(let ((tags))
@@ -475,10 +284,8 @@ Perform the following transformations:
 	      (beginning-of-line)
 	      (when (looking-at "^[[:space:]]*$")
 		(delete-line))))
-
 	  (org-next-visible-heading 1)
 	  (org-set-tags tags)))
-
       (goto-char (point-min))
       (org-next-visible-heading 1)
       (when created-at
@@ -491,23 +298,17 @@ Perform the following transformations:
 	(save-excursion
 	  (replace-regexp "\\[\\[\\([0-9]+\\)]]" "[[id:\\1][\\1]]"))))))
 #+end_src
-
 *** Change verbatim to code
-
 Pandoc produces verbatim (=) in place of markdown code (`), but I
 prefer to use code (~).
-
 #+begin_src elisp
 (defun me:verbatim-to-code ()
   (interactive)
   (replace-regexp "=" "~"))
-
 (keymap-global-set "C-c m c" 'me:verbatim-to-code)
 #+end_src
-
 ** Automatic migration
 *** Markdown indicator string
-
 I renamed all *.md documents to *.org for easier file searching and
 file name resolutions.
 
@@ -518,9 +319,7 @@ strings to them.
 (defconst me:markdown-indicator-string "###MARKDOWN###"
   "String that indicates the current file is a markdown document.")
 #+end_src
-
 *** DWIM migration
-
 #+begin_src elisp
 (defun me:migrate-dwim ()
   "Migrate current file. DWIM."
@@ -535,111 +334,73 @@ strings to them.
 	  (me:migrate-markdown-to-org))
       (me:migrate-org-properties)
       (me:migrate-latex))))
-
 (keymap-global-set "C-c m m" 'me:migrate-dwim)
 #+end_src
-
 * Languages
-
 ** Python
-
 *** Set shell interpreter
-
 The default one is "python3".
 
 #+begin_src elisp
 (setq python-shell-interpreter "python")
 #+end_src
-
 ** CC Mode
-
 #+begin_src elisp
 (setq c-default-style "bsd")
-
 (add-hook 'c-mode-hook
 	  (lambda ()
 	    (setq c-basic-offset 2)))
 #+end_src
-
-* Org Mode
-Migrating from use-package
-
+** Yaml
 #+begin_src elisp
-(require 'org)
-(require 'org-capture)
+  (require 'yaml-mode)
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
+#+end_src
+* Org mode
+#+begin_src elisp
+  (require 'org)
+  (require 'org-agenda)
+  (require 'org-capture)
 #+end_src
 
 ** Key bindings
-
 #+begin_src elisp
-(use-package org
-  :bind (("C-c l" . org-store-link)
-	 ("C-c a" . org-agenda)
-	 ("C-c c" . org-capture)
-	 
-	 :map org-mode-map
-	 ("M-{" . org-backward-element)
-	 ("M-}" . org-forward-element)))
+(keymap-global-set "C-c l" 'org-store-link)
+(keymap-global-set "C-c a" 'org-agenda)
+(keymap-global-set "C-c c" 'org-capture)
+
+(keymap-set org-mode-map "M-{" 'org-backward-element)
+(keymap-set org-mode-map "M-}" 'org-forward-element)
 #+end_src
-
 ** Directory
-
 #+begin_src elisp
 (setq org-directory me:note-root-directory)
 #+end_src
-
+** Open markdown in Org
+#+begin_src elisp
+(add-to-list 'org-file-apps '("\\.md\\'" . emacs))
+#+end_src
 ** Starting hour of a day
-
 - Sync with the core note taking system.
 - Also used in org-journal.
-
+  
 #+begin_src elisp
 (setq org-extend-today-until me:note-day-start-hour)
 #+end_src
-
-** ID
-
-Integration with org-roam
-
-*** ID format
-
-#+begin_src elisp
-(setq org-id-ts-format me:zettel-id-format)
-
-(setq org-id-method 'ts)
-#+end_src
-
-*** Disable global tracking
-
-#+begin_src elisp
-(setq org-id-track-globally nil)
-#+end_src
-
-** New entry blanks
-
-#+begin_src elisp
-(setq org-blank-before-new-entry '((heading . t) (plain-list-item auto)))
-#+end_src
-
 ** Indent mode
 #+begin_src elisp
 (setq org-startup-indented t)
 #+end_src
-
-** Open markdown in Org
-
+** New entry blanks
 #+begin_src elisp
-(add-to-list 'org-file-apps '("\\.md\\'" . emacs))
+(setq org-blank-before-new-entry '((heading . auto) (plain-list-item auto)))
 #+end_src
-
-** Latex integration
-
+** Latex
 *** LuaLaTeX
-
 #+begin_src elisp
 (setq org-latex-pdf-process
   '("lualatex -shell-escape -interaction nonstopmode %f"
-    "lualatex -shell-escape -interaction nonstopmode %f")) 
+    "lualatex -shell-escape -interaction nonstopmode %f"))
 
 (setq luamagick '(luamagick :programs ("lualatex" "convert")
        :description "pdf > png"
@@ -650,14 +411,10 @@ Integration with org-roam
        :image-size-adjust (1.0 . 1.0)
        :latex-compiler ("lualatex -interaction nonstopmode -output-directory %o %f")
        :image-converter ("convert -density %D -trim -antialias %f -quality 100 %O")))
-
 (add-to-list 'org-preview-latex-process-alist luamagick)
 #+end_src
-
 *** dvisvgm
-
 Dvisvgm configuration is patched for my environment...
-
 #+begin_src elisp
 (add-to-list 'org-preview-latex-process-alist
 	     '(dvisvgm :programs ("latex" "dvisvgm") :description "dvi > svg"
@@ -669,84 +426,38 @@ Dvisvgm configuration is patched for my environment...
 		       :image-converter
 		       ("TEXMFCNF=\"/usr/local/texlive/2025:$TEXMFCNF\" dvisvgm --no-fonts --exact-bbox --scale=%S --output=%O --keep %f")))
 #+end_src
-
 *** Use dvisvgm for inline preview
-
 #+begin_src elisp
 (setq org-preview-latex-default-process 'dvisvgm)
 #+end_src
-
 *** Preview scaling
-
 #+begin_src elisp
 (plist-put org-format-latex-options :scale 2)
 #+end_src
-
-** Image options
+** Images
 #+begin_src elisp
 (setq org-startup-with-inline-images t)
 (setq org-image-actual-width nil)
 (setq org-image-max-width 400)
 #+end_src
 ** Link abbrevations
-
 #+begin_src elisp
 (setq org-link-abbrev-alist
       `(("zk" . ,(expand-file-name "id:%s" me:note-root-directory))
 	("media" . ,(expand-file-name "media/" me:note-root-directory))))
 #+end_src
-
 ** Deadine warning days
-
 #+begin_src elisp
 (setq org-deadline-warning-days 21)
 #+end_src
-
-** Org-agenda
-
-*** Set files for agenda
-
+** Tags
+*** Tag inheritance
+Exprimenting with this
 #+begin_src elisp
-(setq me:org-agenda-files-basic (list me:note-root-directory
-				      (expand-file-name "buffers/" me:note-root-directory)
-				      (expand-file-name "projects/" me:note-root-directory)))
-(setq org-agenda-files (append
-			me:org-agenda-files-basic
-			(list me:note-zk-directory)))
+  (setq org-use-tag-inheritance '("work" "journal" "fleeting"))
 #+end_src
-
-*** Window setup
-
-#+begin_src elisp
-(setq org-agenda-window-setup 'current-buffer)
-(setq org-agenda-restore-windows-after-quit t)
-#+end_src
-
-*** Periodic display options
-
-#+begin_src elisp
-(setq org-agenda-span 14)
-#+end_src
-
-*** Todo display options
-
-#+begin_src elisp
-(setq org-agenda-todo-ignore-deadlines -1)
-#+end_src
-
-*** Custom daily agenda
-
-#+begin_src elisp
-(setq org-agenda-custom-commands
-      '(("d" "Daily agenda" agenda "TODO"
-	 ((org-agenda-files me:org-agenda-files-basic)
-	  (org-agenda-span 'day)))))
-#+end_src
-
 ** Todo
-
 *** Todo keywords
-
 #+begin_src elisp
 (setq org-todo-keywords
       '((sequence "TODO" "WORKING" "|" "DONE")))
@@ -754,21 +465,79 @@ Dvisvgm configuration is patched for my environment...
       '(("TODO" . "gold") ("IDEA" . "coral")
 	("WORKING" . "CadetBlue2")))
 #+end_src
-
 ** Priority
-
 #+begin_src elisp
 (setq org-priority-lowest 68
 	org-priority-highest 65
 	org-priority-default 68)
 #+end_src
-
-** Capture templates
-
+** Editing source code
+*** Window setup
+#+begin_src elisp
+(setq org-src-window-setup 'current-window)
+#+end_src
+*** Remove source code indention
+#+begin_src elisp
+(setq org-edit-src-content-indentation 2)
+#+end_src
+** Org-id
+*** ID format
+#+begin_src elisp
+(setq org-id-ts-format me:zettel-id-format)
+(setq org-id-method 'ts)
+#+end_src
+*** Disable global tracking
+#+begin_src elisp
+(setq org-id-track-globally t)
+#+end_src
+** Org-agenda
+*** Set files for agenda
+#+begin_src elisp
+  (setq org-agenda-files (list me:note-root-directory
+  			     (expand-file-name "buffers/" me:note-root-directory)
+  			     (expand-file-name "projects/" me:note-root-directory)
+  			     me:note-zk-directory))
+#+end_src
+*** Window setup
+#+begin_src elisp
+(setq org-agenda-window-setup 'current-buffer)
+(setq org-agenda-restore-windows-after-quit t)
+#+end_src
+*** Periodic display options
+#+begin_src elisp
+(setq org-agenda-span 14)
+#+end_src
+*** Todo display options
+#+begin_src elisp
+(setq org-agenda-todo-ignore-deadlines -1)
+#+end_src
+*** Custom daily agenda
+#+begin_src elisp
+  (setq org-agenda-custom-commands
+        '(("d" "Daily agenda"
+  	 ((agenda ""
+  		  ((org-agenda-span 'day))))
+  	 ((org-super-agenda-groups
+  	   '(
+  	     (:name "School / work"
+  		    :tag ("school" "work"))
+  	     (:name "Todo"
+  		    :and (:todo ("TODO" "WORKING")
+  			  :not (:tag "fleeting")))
+  	     (:name "Fleeting notes"
+  		    :and (:tag "fleeting"
+  			  :not (:todo ("DONE"))))
+  	     (:name "Journals"
+  		    :tag "journal")
+  	     (:name "Events"
+  		    :tag "event")
+  	     (:name "Today"
+  		    :time-grid t)
+  	     (:discard (:anything t))))))))
+#+end_src
+** Org-capture
 *** Random thoughts (journaling)
-
 Integrate with org-journal.
-
 #+begin_src elisp
 (defun me:org-journal-find-location ()
   (org-journal-new-entry t)
@@ -778,12 +547,17 @@ Integrate with org-journal.
 (add-to-list 'org-capture-templates
 	     `("c" "Random thought"
 	       plain (function me:org-journal-find-location)
-	       "** %T %?"
-	       :empty-lines-before 1))
+	       "** %T %?"))
 #+end_src
-
+*** Zettelkasten entry
+#+begin_src elisp
+  (add-to-list 'org-capture-templates
+  	     `("z" "Zettel"
+  	       entry (file ,(expand-file-name "zk-current.org" me:note-zk-directory))
+  	       "* %?"
+  	       :jump-to-captured t))
+#+end_src
 *** Fleeting note
-
 #+begin_src elisp
 (add-to-list 'org-capture-templates
 	     `("f" "Fleeting note"
@@ -792,9 +566,7 @@ Integrate with org-journal.
 	       :prepend t
 	       :empty-lines-before 1))
 #+end_src
-
 *** Event
-
 #+begin_src elisp
 (add-to-list 'org-capture-templates
 	     `("e" "Event"
@@ -803,9 +575,7 @@ Integrate with org-journal.
 	       :prepend t
 	       :empty-lines-after 1))
 #+end_src
-
 *** Todo item
-
 #+begin_src elisp
 (add-to-list 'org-capture-templates
 	     `("t" "Todo item"
@@ -814,67 +584,37 @@ Integrate with org-journal.
 	       :prepend t
 	       :empty-lines-after 1))
 #+end_src
-
 *** Baekjoon problem
-
 #+begin_src elisp
 (add-to-list 'org-capture-templates
 	     `("b" "Baekjoon problem"
 	      entry (file ,(expand-file-name "problems/baekjoon.org" me:note-root-directory))
 	      "* %^{id}. %^{title}
-
 [[https://www.acmicpc.net/problem/%\\1][Baekjoon]]
-
 ,** Ideas
-
 %?"
 	      :jump-to-captured t))
 #+end_src
-** Editing source code
-
-*** Window setup
-
-#+begin_src elisp
-(setq org-src-window-setup 'current-window)
-#+end_src
-
-*** Remove source code indention
-
-#+begin_src elisp
-(setq org-edit-src-content-indentation 0)
-#+end_src
-
-** Babel
+** Org-babel
 *** Disable confirmation
-
 I know what I'm doing
-
 #+begin_src elisp
 (setq org-confirm-babel-evaluate nil)
 #+end_src
-
 *** Make the result keyword lowercased
-
 #+begin_src elisp
 (setq org-babel-results-keyword "results")
 #+end_src
-
 ** I don't know what it does
-
 todo
-
 #+begin_src elisp
 (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
 #+end_src
-
 * Org-journal
-
 #+begin_src elisp
 (require 'org-journal)
 #+end_src
-
 ** Key bindings
-
 Custom lambda functions for opening today's journal file,
 since creation of new entries are handled by org-capture.
 
@@ -884,98 +624,148 @@ since creation of new entries are handled by org-capture.
 			       (interactive)
 			       (org-journal-new-entry t)))
 #+end_src
-
 ** Directory and files
-
 #+begin_src elisp
 (setq org-journal-dir me:note-periodic-directory)
 (setq org-journal-file-format "%Y/%m/%Y-%m-%d.org")
 #+end_src
-
 ** Date format
-
 #+begin_src elisp
 (setq org-journal-date-format "%Y-%m-%d")
 #+end_src
-
 ** Time entry format
-
 #+begin_src elisp
 (setq org-journal-time-prefix "*** ")
 (setq org-journal-time-format "<%R>")
 #+end_src
-
 ** Opening entries
-
 #+begin_src elisp
 (setq org-journal-find-file 'find-file)
 #+end_src
-
 ** Disable carry over
-
 Long-term todo items are already handled by my agenda workflow.
 No need for carry overs.
-
 #+begin_src elisp
 (setq org-journal-carryover-items "")
 #+end_src
-
-* Org-roam
-
+* Org-super-agenda
 #+begin_src elisp
-(require 'org-roam)
+(require 'org-super-agenda)
+#+end_src
+** Enable org-super-agenda mode
+#+begin_src elisp
+(org-super-agenda-mode)
+#+end_src
+* Zettelkasten
+Needs cleanup after configuring org-roam...
+depends on Org mode.
+
+** helper: Goto top level heading
+#+begin_src elisp
+(defun me:org-goto-top-level-heading ()
+  "Goto upmost heading."
+  (interactive)
+  (while (org-up-heading-safe) nil))
 #+end_src
 
-** Key bindings
-
+** Predicate for zettel file names
 #+begin_src elisp
-(keymap-global-set "C-c n i" 'org-roam-node-insert)
-(keymap-global-set "C-c n f" 'org-roam-node-find)
-(keymap-global-set "C-c n l" 'org-roam-buffer-toggle)
+(defun me:is-zettel-name-p (name)
+  "Return t if NAME is a file name to a zettel. else return nill."
+  (string-suffix-p "zk/" (file-name-directory name)))
 #+end_src
-
-** Directory
-
+** Clear zettel buffers
 #+begin_src elisp
-(setq org-roam-directory me:note-zk-directory)
+(defun me:clear-zettels ()
+  "Clear all Zettel buffers."
+  (interactive)
+  (mapc (lambda (x)
+	  (if-let ((file-name (buffer-file-name x)))
+	      (when (me:is-zettel-name-p file-name)
+		(with-current-buffer x
+		  (save-buffer)
+		  (kill-buffer)))))
+	(buffer-list)))
+(keymap-global-set "C-c z c" 'me:clear-zettels)
 #+end_src
-
-** Autosync mode
-
+** Zettel id format
 #+begin_src elisp
-(org-roam-db-autosync-mode)
+(defconst me:zettel-id-format
+  "%Y%m%d%H%M"
+  "The format for zettel IDs.")
 #+end_src
-
-** Link format
-
+** Get zettel timestamp
 #+begin_src elisp
-(setq org-roam-node-formatter "${id}")
+(defun me:get-zettel-timestamp ()
+  "Get zettel timestamp for current time."
+  (format-time-string me:zettel-id-format))
 #+end_src
-
-** org-roam-graph
-
+** Get zettel id for current entry
 #+begin_src elisp
-(setq org-roam-graph-viewer "/Applications/Firefox.app/Contents/MacOS/firefox")
+  (defun me:entry-zettel-id ()
+    "Return the zettel ID of current entry."
+    (save-excursion
+      (me:org-goto-top-level-heading)
+      (let ((properties (org-entry-properties (point))))
+        (cdr (or (assoc "id" properties)
+  	       (assoc "ID" properties))))))
 #+end_src
-
-** Capture templates
-
+** Get zettel id for current entry, but as a link format
 #+begin_src elisp
-(setq org-roam-capture-templates
-      '(("d" "default" plain "%?"
-	 :target (file+head "%<%Y%m%d%H%M>.org" "
-,* ${title}")
-	:unnarrowed t)))
+  (defun me:entry-zettel-id-as-link ()
+    "Return the zettel ID of current entry as Org link format."
+    (interactive)
+    (let ((id (me:entry-zettel-id)))
+      (message id)
+      (format "[[id:%s][%s]]" id id)))
+
+  (keymap-global-set "C-c z l" (lambda ()
+  			       (interactive)
+  			       (kill-new (me:entry-zettel-id-as-link))))
 #+end_src
-
-** File path for extracted nodes
-
+** Managing properties
+*** Set the ID property
 #+begin_src elisp
-(setq org-roam-extract-new-file-path "%<%Y%m%d%H%M>")
+  (defun me:set-zettel-id-property ()
+    "Set zettel ID of the current entry, if it's not set."
+    (interactive)
+    (save-excursion
+      (me:org-goto-top-level-heading)
+      (unless (org-entry-get (point) "id")
+        (org-entry-put (point) "ID" (me:get-zettel-timestamp)))))
 #+end_src
-
+*** Set date properties
+#+begin_src elisp
+  (defun me:set-date-properties ()
+    "Update the 'updated' property of current buffer as current date.
+  Also update the 'created' property if one does not exist."
+    (interactive)
+    (let ((date-string (format-time-string "%Y-%m-%d" (me:note-current-date))))
+      (save-excursion
+        (me:org-goto-top-level-heading)
+        (unless (org-entry-get (point) "created")
+  	(org-set-property "created" date-string))
+        (org-set-property "updated" date-string)))
+    (message "Set date properties"))
+#+end_src
+*** Set all zettel properties
+#+begin_src elisp
+(defun me:set-zettel-properties ()
+  "Call `me:set-date-properties' and `me:set-zettel-id-property'."
+  (interactive)
+  (me:set-date-properties)
+  (me:set-zettel-id-property))
+(keymap-global-set "C-c z u" 'me:set-zettel-properties)
+#+end_src
+** Search for backlinks
+#+begin_src elisp
+(defun me:zettel-search-backlinks ()
+  "Search for ZK backlinks for current buffer via `rg'."
+  (interactive)
+  (rg-run (me:entry-zettel-id) "*" me:note-zk-directory t))
+(keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
+#+end_src
 * Rg
-
 #+begin_src elisp
 (use-package rg :ensure t
   :bind (:map rg-mode-map
@@ -988,9 +778,7 @@ No need for carry overs.
     :dir me:note-zk-directory
     :menu ("Search" "z" "Zettelkasten")))
 #+end_src
-
 * Elfeed
-
 #+begin_src elisp
 (defun me:elfeed-show-untag-unread ()
   (interactive)
@@ -1015,17 +803,12 @@ No need for carry overs.
   (load (expand-file-name "elfeed.el" user-emacs-directory))
   (elfeed-update))
 #+end_src
-
 * Shr / EWW
-
 ** Set max width for readability
-
 #+begin_src elisp
 (setq shr-max-width 80)
 #+end_src
-
-** Modus-themes
-
+* Modus-themes
 #+begin_src elisp
 (use-package modus-themes :ensure t
   :init
@@ -1049,4 +832,10 @@ I don't enable it by default but it's nice to have
 #+begin_src elisp
 (use-package evil :ensure t
   :bind (("C-c e" . evil-mode)))
+#+end_src
+
+* Vterm
+
+#+begin_src elisp
+  (require 'vterm)
 #+end_src
