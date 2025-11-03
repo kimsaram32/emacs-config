@@ -372,9 +372,12 @@ The default one is "python3".
 (keymap-set org-mode-map "M-{" 'org-backward-element)
 (keymap-set org-mode-map "M-}" 'org-forward-element)
 #+end_src
-** Directory
+** Directories
 #+begin_src elisp
-(setq org-directory me:note-root-directory)
+  (setq org-directory me:note-root-directory)
+  (setq org-archive-location (expand-file-name
+  			    "archives/%s.archive::"
+  			    me:note-root-directory))
 #+end_src
 ** Open markdown in Org
 #+begin_src elisp
@@ -500,8 +503,8 @@ Exprimenting with this
 #+end_src
 *** Window setup
 #+begin_src elisp
-(setq org-agenda-window-setup 'current-buffer)
-(setq org-agenda-restore-windows-after-quit t)
+  (setq org-agenda-window-setup 'other-window)
+  (setq org-agenda-restore-windows-after-quit t)
 #+end_src
 *** Periodic display options
 #+begin_src elisp
@@ -518,22 +521,27 @@ Exprimenting with this
   	 ((agenda ""
   		  ((org-agenda-span 'day))))
   	 ((org-super-agenda-groups
-  	   '(
-  	     (:name "School / work"
-  		    :tag ("school" "work"))
+  	   '((:name "Fleeting notes"
+  		    :and (:tag "fleeting"
+  			       :not (:todo ("DONE")))
+  		    :order 1)
+  	     (:name "School"
+  		    :and (:todo t
+  				:tag ("school" "내신")))
+  	     (:name "Work"
+  		    :tag ("work"))
   	     (:name "Todo"
   		    :and (:todo ("TODO" "WORKING")
-  			  :not (:tag "fleeting")))
-  	     (:name "Fleeting notes"
-  		    :and (:tag "fleeting"
-  			  :not (:todo ("DONE"))))
+  				:not (:tag "fleeting")))
   	     (:name "Journals"
-  		    :tag "journal")
+  		    :tag "journal"
+  		    :order 2)
   	     (:name "Events"
-  		    :tag "event")
+  		    :tag "event"
+  		    :order 2)
   	     (:name "Today"
-  		    :time-grid t)
-  	     (:discard (:anything t))))))))
+  		    :time-grid t
+  		    :order 2)))))))
 #+end_src
 ** Org-capture
 *** Random thoughts (journaling)
@@ -745,7 +753,7 @@ depends on Org mode.
         (me:org-goto-top-level-heading)
         (unless (org-entry-get (point) "created")
   	(org-set-property "created" date-string))
-        (org-set-property "updated" date-string)))
+        (org-set-property "updated" (concat "<" date-string ">"))))
     (message "Set date properties"))
 #+end_src
 *** Set all zettel properties
@@ -759,11 +767,11 @@ depends on Org mode.
 #+end_src
 ** Search for backlinks
 #+begin_src elisp
-(defun me:zettel-search-backlinks ()
-  "Search for ZK backlinks for current buffer via `rg'."
-  (interactive)
-  (rg-run (me:entry-zettel-id) "*" me:note-zk-directory t))
-(keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
+  (defun me:zettel-search-backlinks ()
+    "Search for ZK backlinks for current entry."
+    (interactive)
+    (org-search-view nil (me:entry-zettel-id) nil))
+  (keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
 #+end_src
 * Rg
 #+begin_src elisp
@@ -838,4 +846,10 @@ I don't enable it by default but it's nice to have
 
 #+begin_src elisp
   (require 'vterm)
+#+end_src
+
+* CDLaTeX
+#+begin_src elisp
+  (require 'auctex)
+  (require 'cdlatex)
 #+end_src
