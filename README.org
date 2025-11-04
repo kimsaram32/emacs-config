@@ -437,6 +437,10 @@ Dvisvgm configuration is patched for my environment...
 #+begin_src elisp
 (plist-put org-format-latex-options :scale 2)
 #+end_src
+*** Image location
+#+begin_src elisp
+  (setq org-preview-latex-image-directory (expand-file-name "ltximg/" me:note-root-directory))
+#+end_src
 ** Images
 #+begin_src elisp
 (setq org-startup-with-inline-images t)
@@ -457,16 +461,18 @@ Dvisvgm configuration is patched for my environment...
 *** Tag inheritance
 Exprimenting with this
 #+begin_src elisp
-  (setq org-use-tag-inheritance '("work" "journal" "fleeting"))
+  (setq org-use-tag-inheritance '("work" "fleeting"))
 #+end_src
 ** Todo
 *** Todo keywords
 #+begin_src elisp
-(setq org-todo-keywords
-      '((sequence "TODO" "WORKING" "|" "DONE")))
-(setq org-todo-keyword-faces
-      '(("TODO" . "gold") ("IDEA" . "coral")
-	("WORKING" . "CadetBlue2")))
+  (setq org-todo-keywords
+        '((sequence "TODO" "WORKING" "|" "DONE" "FAILED")))
+  (setq org-todo-keyword-faces
+        '(("TODO" . "gold")
+  	("IDEA" . "coral")
+  	("WORKING" . "CadetBlue2")
+  	("FAILED" . "brown1")))
 #+end_src
 ** Priority
 #+begin_src elisp
@@ -513,6 +519,14 @@ Exprimenting with this
 *** Todo display options
 #+begin_src elisp
 (setq org-agenda-todo-ignore-deadlines -1)
+#+end_src
+*** Sorting strategy
+#+begin_src elisp
+  (setq org-agenda-sorting-strategy
+        '((agenda deadline-up priority-up category-keep)
+  	(todo urgency-down category-keep)
+  	(tags urgency-down category-keep)
+  	(search category-keep)))
 #+end_src
 *** Custom daily agenda
 #+begin_src elisp
