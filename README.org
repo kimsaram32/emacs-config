@@ -550,30 +550,42 @@ Exprimenting with this
 #+begin_src elisp
   (add-to-list 'org-agenda-custom-commands
         '("d" "Daily agenda"
-  	 ((agenda ""
-  		  ((org-agenda-span 'day))))
-  	 ((org-super-agenda-groups
-  	   '((:name "Fleeting notes"
-  		    :and (:tag "fleeting"
-  			       :not (:todo ("DONE")))
-  		    :order 1)
-  	     (:name "School"
-  		    :and (:todo t
-  				:tag ("school" "내신")))
-  	     (:name "Work"
-  		    :tag ("work"))
-  	     (:name "Todo"
-  		    :and (:todo ("TODO" "WORKING")
-  				:not (:tag "fleeting")))
-  	     (:name "Journals"
-  		    :tag "journal"
-  		    :order 2)
-  	     (:name "Events"
-  		    :tag "event"
-  		    :order 2)
-  	     (:name "Today"
-  		    :time-grid t
-  		    :order 2))))))
+  	((agenda ""
+  		 ((org-agenda-span 'day)
+  		  (org-deadline-past-days 0)
+  		  (org-agenda-deadline-faces
+  		   '((1.0 . org-scheduled-today)
+  		     (0.5 . org-scheduled)
+  		     (0.0 . org-scheduled)))
+  		  (org-agenda-overriding-header "Events")
+  		  (org-super-agenda-groups
+  		   '((:name "Events"
+  			    :tag ("event"))
+  		     (:discard (:anything))))))
+  	 
+  	 (agenda ""
+  		 ((org-agenda-span 'day)
+  		  (org-agenda-overriding-header "Today")
+  		  (org-super-agenda-groups
+  		   '((:discard (:tag "event"))
+  		     (:name "Fleeting notes"
+  			    :and (:tag "fleeting"
+  				       :not (:todo ("DONE")))
+  			    :order 1)
+  		     (:name "School"
+  			    :and (:todo t
+  					:tag ("school" "내신")))
+  		     (:name "Work"
+  			    :tag ("work"))
+  		     (:name "Todo"
+  			    :and (:todo ("TODO" "WORKING")
+  					:not (:tag "fleeting")))
+  		     (:name "Journals"
+  			    :tag "journal"
+  			    :order 2)
+  		     (:name "Today"
+  			    :time-grid t
+  			    :order 2))))))))
 #+end_src
 *** Custom project agenda
 #+begin_src elisp
