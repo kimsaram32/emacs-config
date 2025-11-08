@@ -56,6 +56,50 @@ to prevent resizing windows when changing fonts.
 #+begin_src elisp
 (setq-default line-spacing 2)
 #+end_src
+* Editing
+** Visual line mode
+#+begin_src elisp
+(visual-line-mode)
+#+end_src
+** Sentences should end with one space
+#+begin_src elisp
+(setq sentence-end-double-space nil)
+#+end_src
+** Mark ring
+#+begin_src elisp
+(setq set-mark-command-repeat-pop t)
+#+end_src
+** Registers
+#+begin_src elisp
+  (setopt register-use-preview 'insist)
+#+end_src
+** Insert quotes more easily
+#+begin_src elisp
+(defun me:insert-quotes (&optional arg)
+  "Like `insert-parentheses`, but for quotes."
+  (interactive "P")
+  (insert-pair arg ?\" ?\"))
+(keymap-global-set "M-\"" 'me:insert-quotes)
+#+end_src
+** Clear empty lines
+#+begin_src elisp
+  (defun me:clear-empty-lines ()
+    "Clear empty lines on current buffer.
+
+  When region is activated, operat on that region."
+    (interactive)
+    (save-restriction
+      (save-excursion
+        (when (use-region-p)
+          (narrow-to-region (region-beginning) (region-end)))
+        (goto-char (point-min))
+        (delete-matching-lines "^$"))))
+#+end_src
+** Delete pair
+#+begin_src elisp
+(setq delete-pair-blink-delay 0)
+(keymap-global-set "C-M-z" 'delete-pair)
+#+end_src
 * UI
 ** Disable menu bar mode
 #+begin_src elisp
@@ -85,46 +129,6 @@ to prevent resizing windows when changing fonts.
 (keymap-set tab-prefix-map "]" 'tab-next)
 (keymap-set tab-prefix-map "[" 'tab-previous)
 (setq tab-bar-auto-width-max '((140) 20))
-#+end_src
-* Editing
-** Visual line mode
-#+begin_src elisp
-(visual-line-mode)
-#+end_src
-** Sentences should end with one space
-#+begin_src elisp
-(setq sentence-end-double-space nil)
-#+end_src
-** Mark ring
-#+begin_src elisp
-(setq set-mark-command-repeat-pop t)
-#+end_src
-** Insert quotes more easily
-#+begin_src elisp
-(defun me:insert-quotes (&optional arg)
-  "Like `insert-parentheses`, but for quotes."
-  (interactive "P")
-  (insert-pair arg ?\" ?\"))
-(keymap-global-set "M-\"" 'me:insert-quotes)
-#+end_src
-** Clear empty lines
-#+begin_src elisp
-  (defun me:clear-empty-lines ()
-    "Clear empty lines on current buffer.
-
-  When region is activated, operat on that region."
-    (interactive)
-    (save-restriction
-      (save-excursion
-        (when (use-region-p)
-          (narrow-to-region (region-beginning) (region-end)))
-        (goto-char (point-min))
-        (delete-matching-lines "^$"))))
-#+end_src
-** Delete pair
-#+begin_src elisp
-(setq delete-pair-blink-delay 0)
-(keymap-global-set "C-M-z" 'delete-pair)
 #+end_src
 * Buffers
 ** Default scratch buffer message
