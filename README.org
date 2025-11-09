@@ -61,9 +61,10 @@ to prevent resizing windows when changing fonts.
 #+begin_src elisp
 (visual-line-mode)
 #+end_src
-** Sentences should end with one space
+** Sentences
 #+begin_src elisp
-(setq sentence-end-double-space nil)
+  (setq sentence-end-double-space nil)
+  (setq sentence-end-base "[.?!…‽;,][]\"'”’)}»›]*")
 #+end_src
 ** Mark ring
 #+begin_src elisp
@@ -176,7 +177,7 @@ Most functions are moved into org-journal
 ** Get current day for the note system
 #+begin_src elisp
 (defun me:note-current-date ()
-  "Return current date for the note system. If the time is before
+  "Return current time value for the note system. If the time is before
 `me:note-day-start-hour', return yesterday's date. Otherwise, return
 today's date."
   (let* ((time (decode-time))
@@ -206,6 +207,25 @@ nil."
   (not (not (string-match-p "^[[:blank:]]*$"
         (buffer-substring (line-beginning-position)
                           (line-end-position))))))
+#+end_src
+** Remove empty lines before/after headings
+#+begin_src elisp
+  ;; this is a quite hacky implementation; fix later
+  (defun me:org-remove-empty-lines-around-headings ()
+    "Remove empty lines before and after each headings."
+    (interactive)
+    (org-map-entries
+       (lambda ()
+         (forward-line -1)
+         (when (is-empty-line-p)
+           (insert "##delete##"))
+         (forward-line 2)
+         (when (is-empty-line-p)
+           (insert "##delete##")))
+       (if (region-active-p) 'region nil))
+    (delete-matching-lines "##delete##"))
+
+  (keymap-global-set "C-c m h" 'me:org-remove-empty-lines-around-headings)
 #+end_src
 ** Migrate old Org mode documents
 #+begin_src elisp
@@ -313,6 +333,16 @@ prefer to use code (~).
   (interactive)
   (replace-regexp "=" "~"))
 (keymap-global-set "C-c m c" 'me:verbatim-to-code)
+#+end_src
+** Migration from Obsidian documents
+#+begin_src elisp
+  (defun me:migrate-insert-capture-heading ()
+    "Insert heading from current buffer's name."
+    (interactive)
+    (let* ((split (string-split (file-name-base (buffer-name))))
+  	 (time (date-to-time (nth 0 split)))
+  	 (name (string-join (cdr split) " ")))
+      (insert "* " (format-time-string "<%Y-%m-%d> " time) name))))
 #+end_src
 ** Automatic migration
 *** Markdown indicator string
@@ -473,7 +503,7 @@ Dvisvgm configuration is patched for my environment...
 *** Tag inheritance
 Exprimenting with this
 #+begin_src elisp
-  (setq org-use-tag-inheritance '("work" "fleeting"))
+  (setq org-use-tag-inheritance '("work" "fleeting" "capture"))
 #+end_src
 ** Todo
 *** Todo keywords
