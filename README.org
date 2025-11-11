@@ -537,9 +537,12 @@ Exprimenting with this
 #+end_src
 ** Org-id
 *** ID format
+Used to use timestamp here, but switched to use UUID (default).
+ZK links are inserted not by org-id but a custom function.
+Other entries should be inserted normal UUIDs to distinguish Zettels.
 #+begin_src elisp
-(setq org-id-ts-format me:zettel-id-format)
-(setq org-id-method 'ts)
+  (setq org-id-ts-format me:zettel-id-format)
+  (setq org-id-method 'uuid)
 #+end_src
 *** Disable global tracking
 #+begin_src elisp
@@ -555,7 +558,7 @@ Exprimenting with this
 #+end_src
 *** Window setup
 #+begin_src elisp
-  (setq org-agenda-window-setup 'other-tab)
+  (setq org-agenda-window-setup 'other-window)
   (setq org-agenda-restore-windows-after-quit t)
 #+end_src
 *** Periodic display options
