@@ -276,54 +276,58 @@ The path to the lua filter is hardcoded. This could be improved.
 #+end_src
 *** Convert from markdown to Org
 #+begin_src elisp
-(defun me:migrate-markdown-to-org ()
-  "Convert current markdown file into Org Mode document, using Pandoc.
-Open the converted document in current buffer.
-Perform the following transformations:
-- move frontmatters (created and updated) into properties.
-- if ZK, transform links and add custom_id property."
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (let* ((input-buffer (current-buffer))
-	   (input-file-name (buffer-file-name))
-	   (created-at (when (re-search-forward "^created: \\(.+\\)$" nil t)
-			 (match-string 1)))
-	   (updated-at (when (re-search-forward "^updated: \\(.+\\)$" nil t)
-			 (match-string 1)))
-	   (is-zk (me:is-zettel-name-p input-file-name)))
-      (save-buffer)
-      
-      (with-temp-buffer
-	(call-process-shell-command me:pandoc-migration-command input-file-name t)
-	(let ((temp-buffer (current-buffer)))
-	  (with-current-buffer input-buffer
-	    (replace-buffer-contents temp-buffer))))
+  (defun me:migrate-markdown-to-org ()
+    "Convert current markdown file into Org Mode document, using Pandoc.
+  Open the converted document in current buffer.
+  Perform the following transformations:
+  - move frontmatters (created and updated) into properties.
+  - if ZK, transform links and add custom_id property.
+  - if non-ZK, remove links as they are broken."
+    (interactive)
+    (save-excursion
       (goto-char (point-min))
-      (when is-zk
-	(let ((tags))
-	  (while (re-search-forward "#\\([A-z0-9가-힣\\-]+\\)" nil t)
-	    (push (string-replace "-" "_" (match-string 1)) tags)
-	    (let ((start (match-beginning 0))
-		  (end (match-end 0)))
-	      (delete-region start end)
-	      (goto-char start)
-	      (beginning-of-line)
-	      (when (looking-at "^[[:space:]]*$")
-		(delete-line))))
-	  (org-next-visible-heading 1)
-	  (org-set-tags tags)))
-      (goto-char (point-min))
-      (org-next-visible-heading 1)
-      (when created-at
-	(org-set-property "created" created-at))
-      (when updated-at
-	(org-set-property "updated" updated-at))
-      
-      (when is-zk
-	(me:set-zettel-id-property)
-	(save-excursion
-	  (replace-regexp "\\[\\[\\([0-9]+\\)]]" "[[id:\\1][\\1]]"))))))
+      (let* ((input-buffer (current-buffer))
+  	   (input-file-name (buffer-file-name))
+  	   (created-at (when (re-search-forward "^created: \\(.+\\)$" nil t)
+  			 (match-string 1)))
+  	   (updated-at (when (re-search-forward "^updated: \\(.+\\)$" nil t)
+  			 (match-string 1)))
+  	   (is-zk (me:is-zettel-name-p input-file-name)))
+        (save-buffer)
+        
+        (with-temp-buffer
+  	(call-process-shell-command me:pandoc-migration-command input-file-name t)
+  	(let ((temp-buffer (current-buffer)))
+  	  (with-current-buffer input-buffer
+  	    (replace-buffer-contents temp-buffer))))
+        (goto-char (point-min))
+        (when is-zk
+  	(let ((tags))
+  	  (while (re-search-forward "#\\([A-z0-9가-힣\\-]+\\)" nil t)
+  	    (push (string-replace "-" "_" (match-string 1)) tags)
+  	    (let ((start (match-beginning 0))
+  		  (end (match-end 0)))
+  	      (delete-region start end)
+  	      (goto-char start)
+  	      (beginning-of-line)
+  	      (when (looking-at "^[[:space:]]*$")
+  		(delete-line))))
+  	  (org-next-visible-heading 1)
+  	  (org-set-tags tags)))
+        (goto-char (point-min))
+        (org-next-visible-heading 1)
+        (when created-at
+  	(org-set-property "created" created-at))
+        (when updated-at
+  	(org-set-property "updated" updated-at))
+        
+        (if is-zk
+  	  (progn
+  	    (me:set-zettel-id-property)
+  	    (save-excursion
+  	      (replace-regexp "\\[\\[\\([0-9]+\\)]]" "[[id:\\1][\\1]]")))
+  	(save-excursion
+  	  (replace-regexp "\\[\\[\\(.+?\\)\\]\\]" "\\1"))))))
 #+end_src
 *** Change verbatim to code
 Pandoc produces verbatim (=) in place of markdown code (`), but I
@@ -358,20 +362,21 @@ strings to them.
 #+end_src
 *** DWIM migration
 #+begin_src elisp
-(defun me:migrate-dwim ()
-  "Migrate current file. DWIM."
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (if (search-forward me:markdown-indicator-string nil t)
-	(progn
-	  (replace-match "" nil t)
-	  (while (search-forward me:markdown-indicator-string nil t)
-	    (replace-match "" nil t))
-	  (me:migrate-markdown-to-org))
-      (me:migrate-org-properties)
-      (me:migrate-latex))))
-(keymap-global-set "C-c m m" 'me:migrate-dwim)
+  (defun me:migrate-dwim ()
+    "Migrate current file. DWIM."
+    (interactive)
+    (save-excursion
+      (goto-char (point-min))
+      (if (search-forward me:markdown-indicator-string nil t)
+  	(progn
+  	  (replace-match "" nil t)
+  	  (while (search-forward me:markdown-indicator-string nil t)
+  	    (replace-match "" nil t))
+  	  (me:migrate-markdown-to-org))
+        (me:migrate-org-properties)
+        (me:migrate-latex)
+        (me:org-remove-empty-lines-around-headings))))
+  (keymap-global-set "C-c m m" 'me:migrate-dwim)
 #+end_src
 * Languages
 ** Python
@@ -392,15 +397,6 @@ The default one is "python3".
 #+begin_src elisp
   (require 'yaml-mode)
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
-#+end_src
-* Dired
-** Set ls command
-#+begin_src elisp
-  (setq dired-listing-switches "-hal")
-#+end_src
-** Delete by moving to trash
-#+begin_src elisp
-  (setq delete-by-moving-to-trash t)
 #+end_src
 * Org mode
 #+begin_src elisp
@@ -425,24 +421,20 @@ The default one is "python3".
   			    "archives/%s.archive::"
   			    me:note-root-directory))
 #+end_src
-** Open markdown in Org
+** File apps
 #+begin_src elisp
 (add-to-list 'org-file-apps '("\\.md\\'" . emacs))
 #+end_src
 ** Starting hour of a day
 - Sync with the core note taking system.
 - Also used in org-journal.
-  
 #+begin_src elisp
 (setq org-extend-today-until me:note-day-start-hour)
 #+end_src
 ** Indent mode
+Use indented headings.
 #+begin_src elisp
 (setq org-startup-indented t)
-#+end_src
-** New entry blanks
-#+begin_src elisp
-(setq org-blank-before-new-entry '((heading . auto) (plain-list-item auto)))
 #+end_src
 ** Latex
 *** LuaLaTeX
@@ -483,6 +475,10 @@ Dvisvgm configuration is patched for my environment...
 #+begin_src elisp
   (setq org-preview-latex-image-directory (expand-file-name "ltximg/" me:note-root-directory))
 #+end_src
+** New entry blanks
+#+begin_src elisp
+(setq org-blank-before-new-entry '((heading . auto) (plain-list-item auto)))
+#+end_src
 ** Images
 #+begin_src elisp
 (setq org-startup-with-inline-images t)
@@ -491,9 +487,9 @@ Dvisvgm configuration is patched for my environment...
 #+end_src
 ** Link abbrevations
 #+begin_src elisp
-(setq org-link-abbrev-alist
-      `(("zk" . ,(expand-file-name "id:%s" me:note-root-directory))
-	("media" . ,(expand-file-name "media/" me:note-root-directory))))
+  (setq org-link-abbrev-alist
+        `(("zk" . ,(expand-file-name "id:%s" me:note-root-directory))
+  	("media" . ,(expand-file-name "media/" me:note-root-directory))))
 #+end_src
 ** Tags
 *** Tag inheritance
@@ -627,6 +623,9 @@ Other entries should be inserted normal UUIDs to distinguish Zettels.
   	 ((tags "current_project"))))
 #+end_src
 ** Org-capture
+#+begin_src elisp
+  (setq org-capture-templates nil)
+#+end_src
 *** Random thoughts (journaling)
 Integrate with org-journal.
 #+begin_src elisp
@@ -657,21 +656,30 @@ Integrate with org-journal.
 	       :prepend t
 	       :empty-lines-before 1))
 #+end_src
+*** Fleeting note (elfeed)
+#+begin_src elisp
+  (add-to-list 'org-capture-templates
+  	     `("d" "Fleeting note (elfeed)"
+  	       entry (file ,(expand-file-name "fleeting.org" me:note-root-directory))
+  	       "* IDEA %t %?
+  [[%:external-link][%:title]]"
+  	       :prepend t))
+#+end_src
 *** Event
 #+begin_src elisp
-(add-to-list 'org-capture-templates
-	     `("e" "Event"
-	       entry (file ,(expand-file-name "event.org" me:note-root-directory))
-	       "* %?"
-	       :prepend t
-	       :empty-lines-after 1))
+  (add-to-list 'org-capture-templates
+  	     `("e" "Event"
+  	       entry (file ,(expand-file-name "events.org" me:note-root-directory))
+  	       "* %? :event:"
+  	       :prepend t
+  	       :empty-lines-after 1))
 #+end_src
 *** Todo item
 #+begin_src elisp
 (add-to-list 'org-capture-templates
 	     `("t" "Todo item"
 	       entry (file ,(expand-file-name "todo.org" me:note-root-directory))
-	       "* TODO %t %?"
+	       "* TODO %?"
 	       :prepend t
 	       :empty-lines-after 1))
 #+end_src
@@ -756,8 +764,9 @@ since creation of new entries are handled by org-capture.
 (setq org-journal-time-format "<%R>")
 #+end_src
 ** Opening entries
+Use find-file to open journals in current window.
 #+begin_src elisp
-(setq org-journal-find-file 'find-file)
+(setq org-journal-find-file-fn 'find-file)
 #+end_src
 ** Disable carry over
 Long-term todo items are already handled by my agenda workflow.
@@ -774,10 +783,8 @@ No need for carry overs.
 (org-super-agenda-mode)
 #+end_src
 * Zettelkasten
-Needs cleanup after configuring org-roam...
-depends on Org mode.
-
-** helper: Goto top level heading
+Depends on Org mode.
+o** helper: Goto top level heading
 #+begin_src elisp
 (defun me:org-goto-top-level-heading ()
   "Goto upmost heading."
@@ -825,9 +832,7 @@ depends on Org mode.
       (let ((properties (org-entry-properties (point))))
         (cdr (or (assoc "id" properties)
   	       (assoc "ID" properties))))))
-#+end_src
-** Get zettel id for current entry, but as a link format
-#+begin_src elisp
+
   (defun me:entry-zettel-id-as-link ()
     "Return the zettel ID of current entry as Org link format."
     (interactive)
@@ -836,8 +841,8 @@ depends on Org mode.
       (format "[[id:%s][%s]]" id id)))
 
   (keymap-global-set "C-c z l" (lambda ()
-  			       (interactive)
-  			       (kill-new (me:entry-zettel-id-as-link))))
+    			     (interactive)
+    			     (kill-new (me:entry-zettel-id-as-link))))
 #+end_src
 ** Managing properties
 *** Set the ID property
@@ -881,39 +886,56 @@ depends on Org mode.
     (org-search-view nil (me:entry-zettel-id) nil))
   (keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
 #+end_src
+* Dired
+** Set ls command
+#+begin_src elisp
+  (setq dired-listing-switches "-hal")
+#+end_src
+** Delete by moving to trash
+#+begin_src elisp
+  (setq delete-by-moving-to-trash t)
+#+end_src
 * Rg
 #+begin_src elisp
-  (use-package rg :ensure t
-    :bind (:map rg-mode-map
-  	      ("C-n" . rg-next-file)
-  	      ("C-p" . rg-prev-file))
-    :config
-    (rg-enable-default-bindings))
+  (require 'rg)
+  (keymap-set rg-mode-map "C-n" 'rg-next-file)
+  (keymap-set rg-mode-map "C-p" 'rg-prev-file)
+  (rg-enable-default-bindings)
 #+end_src
 * Elfeed
 #+begin_src elisp
-(defun me:elfeed-show-untag-unread ()
-  (interactive)
-  (elfeed-show-untag 'unread))
-
-(defun me:elfeed-show-visit-eww ()
-  "Visit the current entry with `eww'."
-  (interactive)
-  (when-let ((link (elfeed-entry-link elfeed-show-entry)))
-    (eww link)))
-
-(use-package elfeed :ensure t
-  :bind (("C-x w" . 'elfeed)
-	 :map elfeed-search-mode-map
-	 ("TAB" . next-line)
-	 ("S-<tab>" . previous-line)
-	 :map elfeed-show-mode-map
-	 ("r" . me:elfeed-show-untag-unread)
-	 ("w" . me:elfeed-show-visit-eww))
-  :config
+  (require 'elfeed)
+#+end_src
+** Key bindings
+#+begin_src elisp
+  (keymap-global-set "C-x w" 'elfeed)
+#+end_src
+** Default search filter
+#+begin_src elisp
   (setq elfeed-search-filter "+unread")
+#+end_src
+** Load entries
+#+begin_src elisp
   (load (expand-file-name "elfeed.el" user-emacs-directory))
-  (elfeed-update))
+  (elfeed-update)
+#+end_src
+** Unread current entry
+#+begin_src elisp
+  (defun me:elfeed-show-untag-unread ()
+    (interactive)
+    (elfeed-show-untag 'unread))
+
+  (keymap-set elfeed-show-mode-map "r" . me:elfeed-show-untag-unread)
+#+end_src
+** EWW Integration
+#+begin_src elisp
+  (defun me:elfeed-show-visit-eww ()
+    "Visit the current entry with `eww'."
+    (interactive)
+    (when-let ((link (elfeed-entry-link elfeed-show-entry)))
+      (eww link)))
+
+  (keymap-set elfeed-show-mode-map "w" . me:elfeed-show-visit-eww)
 #+end_src
 * Shr / EWW
 ** Set max width for readability
@@ -922,31 +944,36 @@ depends on Org mode.
 #+end_src
 * Modus-themes
 #+begin_src elisp
-(use-package modus-themes :ensure t
-  :init
   (require-theme 'modus-themes)
-  :bind (("<f5>" . modus-themes-rotate))
-  :config
-  (setq modus-themes-common-palette-overrides modus-themes-preset-overrides-faint)
-  (modus-themes-load-theme 'modus-vivendi-tinted))
+  (require 'modus-themes)
 #+end_src
-
+** Key bindings
+#+begin_src elisp
+  (keymap-global-set "<f5>" 'modus-themes-rotate)
+#+end_src
+** Theme
+#+begin_src elisp
+  (setq modus-themes-common-palette-overrides modus-themes-preset-overrides-faint)
+  (modus-themes-load-theme 'modus-vivendi-tinted)
+#+end_src
 * YaSnippet
 #+begin_src elisp
 (use-package yasnippet :ensure t)
 #+end_src
-* Evil mode
+* Evil
 I don't enable it by default but it's nice to have
 #+begin_src elisp
-(use-package evil :ensure t
-  :bind (("C-c e" . evil-mode)))
+  (require 'evil)
+  (keymap-global-set "C-c e" 'evil-mode)
 #+end_src
 * Vterm
-
 #+begin_src elisp
   (require 'vterm)
 #+end_src
-
+* Man
+#+begin_src elisp
+  (setq-default manual-program "ssh vm-ubuntu man")
+#+end_src
 * CDLaTeX
 #+begin_src elisp
   (require 'auctex)
