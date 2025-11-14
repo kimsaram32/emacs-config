@@ -12,16 +12,17 @@
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file)
 #+end_src
-* exec-path-from-shell
+* Stuff
+** exec-path-from-shell
 #+begin_src elisp
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
 #+end_src
-* Enable disabled commands
+** Enable disabled commands
 #+begin_src elisp
 (put 'scroll-left 'disabled nil)
 #+end_src
-* Apropos key bindings
+** Apropos key bindings
 #+begin_src elisp
 (unbind-key "a" help-map)
 
@@ -30,6 +31,10 @@
 (keymap-set help-map "a v" 'apropos-variable)
 (keymap-set help-map "a u" 'apropos-user-option)
 (keymap-set help-map "a l" 'apropos-library)
+#+end_src
+** Use short answers
+#+begin_src elisp
+  (setq use-short-answers t)
 #+end_src
 * Text
 ** Font faces
@@ -131,6 +136,10 @@ to prevent resizing windows when changing fonts.
 (keymap-set tab-prefix-map "[" 'tab-previous)
 (setq tab-bar-auto-width-max '((140) 20))
 #+end_src
+* Windows
+#+begin_src elisp
+  (setq switch-to-buffer-obey-display-actions t)
+#+end_src
 * Buffers
 ** Default scratch buffer message
 #+begin_src elisp
@@ -152,7 +161,6 @@ to prevent resizing windows when changing fonts.
   (delete-file (buffer-file-name)))
 #+end_src
 * Note taking
-Most functions are moved into org-journal
 ** Directories
 #+begin_src elisp
   (defconst me:note-root-directory (expand-file-name "~/me/myself/")
@@ -186,6 +194,17 @@ today's date."
 		  (- current-day 1)
 		current-day)))
     (encode-time (append (list 0 0 0 day) (seq-subseq time 4)))))
+#+end_src
+** Zettelkasten constants
+Moved here to resolve cyclic dependency between Org Mode and ZK
+#+begin_src elisp
+  (defconst me:zettel-id-format
+    "%Y%m%d%H%M"
+    "The format for zettel IDs.")
+
+  (defconst me:zk-backlinks-buffer-name
+    "*ZK Backlinks*"
+    "Buffer name for displaying ZK backlinks.")
 #+end_src
 * Migration
 ** Migrate inline latex
@@ -346,7 +365,7 @@ prefer to use code (~).
     (let* ((split (string-split (file-name-base (buffer-name))))
   	 (time (date-to-time (nth 0 split)))
   	 (name (string-join (cdr split) " ")))
-      (insert "* " (format-time-string "<%Y-%m-%d> " time) name))))
+      (insert "* " (format-time-string "<%Y-%m-%d> " time) name)))
 #+end_src
 ** Automatic migration
 *** Markdown indicator string
@@ -554,7 +573,6 @@ Other entries should be inserted normal UUIDs to distinguish Zettels.
 #+end_src
 *** Window setup
 #+begin_src elisp
-  (setq org-agenda-window-setup 'other-window)
   (setq org-agenda-restore-windows-after-quit t)
 #+end_src
 *** Periodic display options
@@ -590,7 +608,8 @@ Other entries should be inserted normal UUIDs to distinguish Zettels.
   		  (org-super-agenda-groups
   		   '((:name "Events"
   			    :tag ("event"))
-  		     (:discard (:anything))))))
+  		     (:discard (:anything))))
+  		  (org-agenda-buffer-name "*Org Daily Agenda*")))
   	 
   	 (agenda ""
   		 ((org-agenda-span 'day)
@@ -784,7 +803,15 @@ No need for carry overs.
 #+end_src
 * Zettelkasten
 Depends on Org mode.
-o** helper: Goto top level heading
+** ZK Major mode
+#+begin_src elisp
+  (define-derived-mode me:zk-mode
+    org-mode "Zettelkasten"
+    "Major mode for Zettels.")
+
+  (add-to-list 'auto-mode-alist `("zk-.+?\\.org" . me:zk-mode))
+#+end_src
+** helper: Goto top level heading
 #+begin_src elisp
 (defun me:org-goto-top-level-heading ()
   "Goto upmost heading."
@@ -810,12 +837,6 @@ o** helper: Goto top level heading
 		  (kill-buffer)))))
 	(buffer-list)))
 (keymap-global-set "C-c z c" 'me:clear-zettels)
-#+end_src
-** Zettel id format
-#+begin_src elisp
-(defconst me:zettel-id-format
-  "%Y%m%d%H%M"
-  "The format for zettel IDs.")
 #+end_src
 ** Get zettel timestamp
 #+begin_src elisp
@@ -883,8 +904,34 @@ o** helper: Goto top level heading
   (defun me:zettel-search-backlinks ()
     "Search for ZK backlinks for current entry."
     (interactive)
-    (org-search-view nil (me:entry-zettel-id) nil))
+    (let ((prev org-agenda-buffer-name))
+      (setq org-agenda-buffer-name me:zk-backlinks-buffer-name)
+      (org-search-view nil (me:entry-zettel-id) nil)
+      (setq org-agenda-buffer-name prev)))
+
   (keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
+#+end_src
+** Window setup
+#+begin_src elisp
+  (defun me:in-tab-p (name)
+    "Return t if the current tab bar name is NAME."
+    (string-equal name
+        (if tab-bar-mode
+  	  (cdr (assq 'name (tab-bar--current-tab))) "")))
+
+  (add-to-list 'display-buffer-alist
+  	     `((derived-mode me:zk-mode)
+  	       (display-buffer-reuse-mode-window display-buffer-in-tab)
+  	       (tab-name . "ZK")))
+
+  (add-to-list 'display-buffer-alist
+  	     `((and (lambda (&rest args)
+  		      (me:in-tab-p "ZK"))
+  		    (mode org-agenda-mode))
+  	       (display-buffer-in-side-window)
+  	       (side . right)
+  	       (slot . 0)
+  	       (window-width . 0.4)))
 #+end_src
 * Dired
 ** Set ls command
@@ -925,7 +972,7 @@ o** helper: Goto top level heading
     (interactive)
     (elfeed-show-untag 'unread))
 
-  (keymap-set elfeed-show-mode-map "r" . me:elfeed-show-untag-unread)
+  (keymap-set elfeed-show-mode-map "r" 'me:elfeed-show-untag-unread)
 #+end_src
 ** EWW Integration
 #+begin_src elisp
@@ -935,7 +982,14 @@ o** helper: Goto top level heading
     (when-let ((link (elfeed-entry-link elfeed-show-entry)))
       (eww link)))
 
-  (keymap-set elfeed-show-mode-map "w" . me:elfeed-show-visit-eww)
+  (keymap-set elfeed-show-mode-map "w" 'me:elfeed-show-visit-eww)
+#+end_src
+** Window setup
+#+begin_src elisp
+  (add-to-list 'display-buffer-alist
+  	     `("\\*elfeed-"
+  	       (display-buffer-in-tab)
+  	       (tab-name . "Elfeed")))
 #+end_src
 * Shr / EWW
 ** Set max width for readability
@@ -971,8 +1025,23 @@ I don't enable it by default but it's nice to have
   (require 'vterm)
 #+end_src
 * Man
+** Manual program
 #+begin_src elisp
   (setq-default manual-program "ssh vm-ubuntu man")
+#+end_src
+** Window setup
+#+begin_src elisp
+  (setq Man-notify-method 'thrifty)
+
+  (add-to-list 'display-buffer-alist
+  	     `((derived-mode Man-mode)
+  	       (display-buffer-reuse-mode-window display-buffer-in-side-window)
+  	       (mode . Man-mode)
+  	       (side . right)
+  	       (window-width . 0.5)))
+
+  (add-hook 'Man-mode-hook (lambda ()
+  			  (set-window-dedicated-p (selected-window) nil)))
 #+end_src
 * CDLaTeX
 #+begin_src elisp
