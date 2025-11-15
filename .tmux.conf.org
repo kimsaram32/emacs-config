@@ -1,0 +1,51 @@
+#+property: header-args :tangle out/.tmux.conf
+
+* Prefix key
+#+begin_src zsh
+unbind C-b
+set-option -g prefix C-x
+bind C-x send-prefix
+#+end_src
+* Key bindings
+** Use vi key bindings
+#+begin_src zsh
+setw -g mode-keys vi
+#+end_src
+** Pane navigation
+#+begin_src zsh
+bind k select-pane -U
+bind j select-pane -D
+bind h select-pane -L
+bind l select-pane -R
+#+end_src
+** Split panes intuitively
+#+begin_src zsh
+unbind '"'
+unbind %
+bind - split-window -v
+bind | split-window -h
+#+end_src
+** Reload
+#+begin_src zsh
+bind r source ~/.tmux.conf
+#+end_src
+* Styles
+** Colors
+#+begin_src zsh
+set -g default-terminal "tmux-256color"
+#+end_src
+** Bars
+#+begin_src zsh
+set -g status-style "bg=colour75 fg=black"
+set -g message-style "bg=colour215 fg=black"
+#+end_src
+* Plugins
+** Tmux-ressurect
+#+begin_src zsh
+set -g @plugin "tmux-plugins/tmux-resurrect"
+set -g @resurrect-processes "false"
+#+end_src
+** Load
+#+begin_src zsh
+  run "~/.tmux/plugins/tpm/tpm"
+#+end_src

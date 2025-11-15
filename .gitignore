@@ -1,5 +1,6 @@
-*
+# Emacs
+\#*
+*.*~
 
-!.gitignore
-!init.el
-!README.org
+# Personal
+emacs/elfeed.el

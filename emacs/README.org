@@ -69,7 +69,7 @@ to prevent resizing windows when changing fonts.
 ** Sentences
 #+begin_src elisp
   (setq sentence-end-double-space nil)
-  (setq sentence-end-base "[.?!…‽;,][]\"'”’)}»›]*")
+  (setq sentence-end-base "[.?!…‽,][]\"'”’)}»›]*")
 #+end_src
 ** Mark ring
 #+begin_src elisp
@@ -1027,7 +1027,13 @@ I don't enable it by default but it's nice to have
 * Man
 ** Manual program
 #+begin_src elisp
-  (setq-default manual-program "ssh vm-ubuntu man")
+  (defun me:man-toggle-remote ()
+    "Toggles whether `man' uses Linux VM or current machine (Mac)
+  for man command."
+    (interactive)
+    (setq-default manual-program (if (equal manual-program "man")
+  				   "ssh vm-ubuntu man"
+  				 "man")))
 #+end_src
 ** Window setup
 #+begin_src elisp

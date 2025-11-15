@@ -1,0 +1,27 @@
+#+property: header-args :tangle out/.zprofile
+
+* ZSH Options
+** History
+Expand the =!= character
+#+begin_src zsh
+  setopt BANG_HIST
+#+end_src
+
+Save each command's beginning timestamp and duration.
+#+begin_src zsh
+  setopt EXTENDED_HISTORY
+#+end_src
+
+When a history expansion occurs, do not execute the command directly;
+Reload the line instead.
+#+begin_src zsh
+  setopt HIST_VERIFY
+#+end_src
+* Homebrew
+#+begin_src zsh
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+#+end_src
+* MacPorts
+#+begin_src zsh
+export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
+#+end_src
