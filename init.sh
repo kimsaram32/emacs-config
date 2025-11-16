@@ -38,6 +38,7 @@ declare -A links=(
   ["out/.tmux.conf"]="${HOME}/.tmux.conf"
   ["out/.zshrc"]="${HOME}/.zshrc"
   ["out/.zprofile"]="${HOME}/.zprofile"
+  [".zsh_plugins.txt"]="${HOME}/.zsh_plugins.txt"
   ["emacs/README.org"]="${HOME}/.emacs.d/README.org"
   ["emacs/init.el"]="${HOME}/.emacs.d/init.el"
   ["emacs/elfeed.el"]="${HOME}/.emacs.d/elfeed.el"
