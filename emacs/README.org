@@ -419,10 +419,20 @@ strings to them.
   (keymap-global-set "C-c m m" 'me:migrate-dwim)
 #+end_src
 * Programming
+Current stack is:
+- Flymake for diagnostics and syntax checking
+- Eglot for LSP client and general editor features
+- Xref
+- Emacs projects for workspace management
+
 ** Flymake
 #+begin_src elisp
-  (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
-  (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error)
+  (require 'flymake)
+#+end_src
+*** Next and previous error
+#+begin_src elisp
+  (keymap-set flymake-mode-map "M-n" 'flymake-goto-next-error)
+  (keymap-set flymake-mode-map "M-p" 'flymake-goto-prev-error)
 #+end_src
 ** Python
 *** Set shell interpreter
@@ -431,12 +441,32 @@ The default one is "python3".
 #+begin_src elisp
 (setq python-shell-interpreter "python")
 #+end_src
-** CC Mode
+** C Mode
 #+begin_src elisp
-(setq c-default-style "bsd")
-(add-hook 'c-mode-hook
-	  (lambda ()
-	    (setq c-basic-offset 2)))
+  (setq c-default-style "bsd")
+  (add-hook 'c-mode-hook
+  	  (lambda ()
+  	    (setq c-basic-offset 2)))
+#+end_src
+*** Go to the body of the next defun
+#+begin_src elisp
+  (defun me:c-previous-defun-body ()
+    "Go to body of the previous defun."
+    (interactive)
+    (if (c-defun-name)
+        (c-beginning-of-defun))
+    (c-beginning-of-defun)
+    (c-syntactic-re-search-forward "{"))
+
+  (defun me:c-next-defun-body ()
+    "Go to body of the next defun."
+    (interactive)
+    (if (c-defun-name)
+        (c-end-of-defun))
+    (c-syntactic-re-search-forward "{"))
+
+  (keymap-set c-mode-map "C-M-x" 'me:c-previous-defun-body)
+  (keymap-set c-mode-map "C-M-y" 'me:c-next-defun-body)
 #+end_src
 ** Yaml
 #+begin_src elisp
@@ -1043,6 +1073,15 @@ I don't enable it by default but it's nice to have
   	     `((derived-mode help-mode)
   	       (display-buffer-at-bottom)
   	       (post-command-select-window . t)))
+#+end_src
+** Info
+#+begin_src elisp
+  (add-to-list 'display-buffer-alist
+  	     `((derived-mode Info-mode)
+  	       (display-buffer-reuse-mode-window display-buffer-in-side-window)
+  	       (mode . Info-mode)
+  	       (side . right)
+  	       (window-width . 0.5)))
 #+end_src
 ** Man
 #+begin_src elisp
