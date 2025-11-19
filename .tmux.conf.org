@@ -7,10 +7,6 @@ set-option -g prefix C-x
 bind C-x send-prefix
 #+end_src
 * Key bindings
-** Use vi key bindings
-#+begin_src zsh
-setw -g mode-keys vi
-#+end_src
 ** Pane navigation
 #+begin_src zsh
 bind k select-pane -U
@@ -30,22 +26,88 @@ bind | split-window -h
 bind r source ~/.tmux.conf
 #+end_src
 * Styles
-** Colors
+** Variables
 #+begin_src zsh
-set -g default-terminal "tmux-256color"
+  set -g window-status-format "#[fg=$color_grey0] #{?window_last_flag,#[bold],}#{?window_zoomed_flag,#[italics],}#I #W "
+  set -g window-status-current-format " #[fg=$color_fg]#{?window_zoomed_flag,#[italics],}#I #W#{?window_last_flag,-,} "
+  set -g window-status-separator "#[fg=$color_grey0]|"
+#+end_src
+** Color display
+#+begin_src zsh
+  set -g default-terminal "tmux-256color"
 #+end_src
 ** Bars
 #+begin_src zsh
-set -g status-style "bg=colour75 fg=black"
-set -g message-style "bg=colour215 fg=black"
+  set -g status-style "bg=colour75 fg=black"
+  set -g message-style "bg=colour215 fg=black"
 #+end_src
-* Plugins
-** Tmux-ressurect
+** Windows
 #+begin_src zsh
-set -g @plugin "tmux-plugins/tmux-resurrect"
-set -g @resurrect-processes "false"
+  set -g window-status-format "#[fg=$color_grey0] #{?window_last_flag,#[bold],}#{?window_zoomed_flag,#[italics],}#I #W "
+  set -g window-status-current-format " #[fg=$color_fg]#{?window_zoomed_flag,#[italics],}#I #W#{?window_last_flag,-,} "
+  set -g window-status-separator "#[fg=$color_grey0]|"
 #+end_src
-** Load
+* Copy mode
+** Use vi bindings
+#+begin_src zsh
+  set -g mode-keys vi
+#+end_src
+** Quickly select previous output
+Depends on p10k prompt.
+#+begin_src zsh
+  bind M-9 {
+    copy-mode
+    send -X clear-selection
+    send -X search-backward "❯"
+    send -X cursor-up
+    send -X cursor-up
+    send -X cursor-up
+    send -X end-of-line
+    send -X cursor-left
+    send -X begin-selection
+    send -X search-backward "❯"
+    send -X end-of-line
+    send -X cursor-down
+    send -X start-of-line
+  }
+  bind M-0 {
+    copy-mode
+    send -X clear-selection
+    send -X search-forward "❯"
+    send -X end-of-line
+    send -X cursor-down
+    send -X start-of-line
+    send -X begin-selection
+    send -X search-forward "❯"
+    send -X cursor-up
+    send -X cursor-up
+    send -X cursor-up
+    send -X end-of-line
+    send -X cursor-left
+  }
+#+end_src
+* Persistence
+** Tmux-ressurect
+[[https://github.com/tmux-plugins/tmux-resurrect][GitHub]]
+#+begin_src zsh
+  set -g @plugin "tmux-plugins/tmux-resurrect"
+#+end_src
+
+Do not restore programs.
+#+begin_src zsh
+  set -g @resurrect-processes "false"
+#+end_src
+** Tmux-continuum
+[[https://github.com/tmux-plugins/tmux-continuum][GitHub]]
+#+begin_src zsh
+  set -g @plugin 'tmux-plugins/tmux-continuum'
+#+end_src
+
+Automatically restore last environment when tmux is started.
+#+begin_src zsh
+  set -g @continuum-restore 'on'
+#+end_src
+* Load plugins
 #+begin_src zsh
   run "~/.tmux/plugins/tpm/tpm"
 #+end_src

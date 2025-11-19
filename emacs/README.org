@@ -1,7 +1,7 @@
+# -*- lexical-binding:t; -*-
 #+startup: fold
 #+startup: hideblocks
-#+property: header-args:elisp :results silent
-
+#+property: header-args:elisp :results silent :lexical t
 * Packages
 ** Use Melpa
 #+begin_src elisp
@@ -20,6 +20,23 @@
 * Enable disabled commands
 #+begin_src elisp
 (put 'scroll-left 'disabled nil)
+#+end_src
+* Repeated key bindings
+From [[https://karthinks.com/software/persistent-prefix-keymaps-in-emacs/][Persistent prefifx keymaps in Emacs]]
+#+begin_src elisp
+  (defun me:repeated-prefix-help-command ()
+    (interactive)
+    (when-let* ((keys (this-command-keys-vector))
+                (prefix (seq-take keys (1- (length keys))))
+                (orig-keymap (key-binding prefix t))
+                (keymap (copy-keymap orig-keymap)))
+      (setq me:transient-map--exit-func (set-transient-map keymap t nil "Repeating"))
+      (define-key keymap [remap keyboard-quit]
+        		  (lambda ()
+        		    (interactive)
+        		    (funcall me:transient-map--exit-func)))))
+
+  (setq prefix-help-command #'me:repeated-prefix-help-command)
 #+end_src
 * Apropos key bindings
 #+begin_src elisp
@@ -443,6 +460,10 @@ The default one is "python3".
 #+end_src
 ** C Mode
 #+begin_src elisp
+  (require 'cc-mode)
+#+end_src
+
+#+begin_src elisp
   (setq c-default-style "bsd")
   (add-hook 'c-mode-hook
   	  (lambda ()
@@ -481,12 +502,14 @@ The default one is "python3".
 #+end_src
 ** Key bindings
 #+begin_src elisp
-(keymap-global-set "C-c l" 'org-store-link)
-(keymap-global-set "C-c a" 'org-agenda)
-(keymap-global-set "C-c c" 'org-capture)
+  (keymap-set org-mode-map "C-c TAB" 'org-cycle)
 
-(keymap-set org-mode-map "M-{" 'org-backward-element)
-(keymap-set org-mode-map "M-}" 'org-forward-element)
+  (keymap-global-set "C-c l" 'org-store-link)
+  (keymap-global-set "C-c a" 'org-agenda)
+  (keymap-global-set "C-c c" 'org-capture)
+
+  (keymap-set org-mode-map "M-{" 'org-backward-element)
+  (keymap-set org-mode-map "M-}" 'org-forward-element)
 #+end_src
 ** Directories
 #+begin_src elisp

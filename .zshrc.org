@@ -1,5 +1,11 @@
 #+property: header-args :tangle out/.zshrc
 
+* Start tmux on WezTerm
+#+begin_src bash
+  if [[ ("$TERM_PROGRAM" == "WezTerm") && -z "$(tmux list-clients 2>/dev/null)" ]]; then
+      exec tmux new -As main;
+  fi
+#+end_src
 * Powerlevel10k instant prompt
 Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 Initialization code that may require console input (password prompts, [y/n]
