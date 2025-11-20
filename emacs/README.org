@@ -502,14 +502,20 @@ The default one is "python3".
 #+end_src
 ** Key bindings
 #+begin_src elisp
-  (keymap-set org-mode-map "C-c TAB" 'org-cycle)
-
   (keymap-global-set "C-c l" 'org-store-link)
   (keymap-global-set "C-c a" 'org-agenda)
   (keymap-global-set "C-c c" 'org-capture)
 
   (keymap-set org-mode-map "M-{" 'org-backward-element)
   (keymap-set org-mode-map "M-}" 'org-forward-element)
+#+end_src
+
+These work well with key repetition
+#+begin_src elisp
+  (keymap-set org-mode-map "C-c TAB" 'org-cycle)
+
+  (keymap-set org-mode-map "C-c C-x &" 'org-mark-ring-goto)
+  (keymap-set org-mode-map "C-c C-x C-o" 'org-open-at-point)
 #+end_src
 ** Directories
 #+begin_src elisp
@@ -662,7 +668,7 @@ Other entries should be inserted normal UUIDs to distinguish Zettels.
 *** Sorting strategy
 #+begin_src elisp
   (setq org-agenda-sorting-strategy
-        '((agenda habit-up deadline-up priority-up category-keep)
+        '((agenda habit-up priority-up deadline-up category-keep)
   	(todo urgency-down category-keep)
   	(tags urgency-down category-keep)
   	(search category-keep)))
@@ -697,8 +703,9 @@ Other entries should be inserted normal UUIDs to distinguish Zettels.
   		     (:name "School"
   			    :and (:todo t
   					:tag ("school" "내신")))
-  		     (:name "Work"
-  			    :tag ("work"))
+  		     (:name "202512mid (temp)"
+  			    :and (:todo t
+  					:tag ("202512mid")))
   		     (:name "Todo"
   			    :and (:todo ("TODO" "WORKING")
   					:not (:tag "fleeting")))
@@ -895,20 +902,6 @@ Depends on Org mode.
   "Return t if NAME is a file name to a zettel. else return nill."
   (string-suffix-p "zk/" (file-name-directory name)))
 #+end_src
-** Clear zettel buffers
-#+begin_src elisp
-(defun me:clear-zettels ()
-  "Clear all Zettel buffers."
-  (interactive)
-  (mapc (lambda (x)
-	  (if-let ((file-name (buffer-file-name x)))
-	      (when (me:is-zettel-name-p file-name)
-		(with-current-buffer x
-		  (save-buffer)
-		  (kill-buffer)))))
-	(buffer-list)))
-(keymap-global-set "C-c z c" 'me:clear-zettels)
-#+end_src
 ** Get zettel timestamp
 #+begin_src elisp
 (defun me:get-zettel-timestamp ()
@@ -932,9 +925,9 @@ Depends on Org mode.
       (message id)
       (format "[[id:%s][%s]]" id id)))
 
-  (keymap-global-set "C-c z l" (lambda ()
-    			     (interactive)
-    			     (kill-new (me:entry-zettel-id-as-link))))
+  (keymap-set me:zk-mode-map "C-c z l" (lambda ()
+    				       (interactive)
+    				       (kill-new (me:entry-zettel-id-as-link))))
 #+end_src
 ** Managing properties
 *** Set the ID property
