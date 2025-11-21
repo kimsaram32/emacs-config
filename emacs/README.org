@@ -719,8 +719,15 @@ Other entries should be inserted normal UUIDs to distinguish Zettels.
 *** Custom project agenda
 #+begin_src elisp
   (add-to-list 'org-agenda-custom-commands
-      '("p" "Current projects"
-  	 ((tags "current_project"))))
+  	     '("p" "Projects"
+  	       ((tags "current_project"
+  		      ((org-agenda-prefix-format '((tags . "- ")))
+  		       (org-agenda-overriding-header "Current projects")
+  		       (org-agenda-remove-tags t)))
+  		(tags "project|current_project"
+  		      ((org-agenda-prefix-format '((tags . "- ")))
+  		       (org-agenda-overriding-header "All projects")
+  		       (org-agenda-remove-tags t))))))
 #+end_src
 ** Org-capture
 #+begin_src elisp
@@ -928,6 +935,24 @@ Depends on Org mode.
   (keymap-set me:zk-mode-map "C-c z l" (lambda ()
     				       (interactive)
     				       (kill-new (me:entry-zettel-id-as-link))))
+#+end_src
+
+Integrate with Org agenda mode.
+
+#+begin_src elisp
+  (defun me:copy-zettel-link-in-agenda ()
+    "Add the zettel link to the kill ring from org-agenda-mode."
+    (interactive)
+    (let* ((marker (or (org-get-at-bol 'org-marker)
+  		     (org-agenda-error)))
+  	 (buffer (marker-buffer marker))
+  	 (pos (marker-position marker)))
+      (with-current-buffer buffer 
+        (widen)
+        (goto-char pos)
+        (kill-new (me:entry-zettel-id-as-link)))))
+
+  (keymap-set org-agenda-mode-map "C-c z l" 'me:copy-zettel-link-in-agenda)
 #+end_src
 ** Managing properties
 *** Set the ID property
