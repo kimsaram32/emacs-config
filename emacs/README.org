@@ -486,8 +486,8 @@ The default one is "python3".
         (c-end-of-defun))
     (c-syntactic-re-search-forward "{"))
 
-  (keymap-set c-mode-map "C-M-x" 'me:c-previous-defun-body)
-  (keymap-set c-mode-map "C-M-y" 'me:c-next-defun-body)
+  (keymap-set c-mode-map "C-M-x" 'me:c-next-defun-body)
+  (keymap-set c-mode-map "C-M-y" 'me:c-previous-defun-body)
 #+end_src
 ** Yaml
 #+begin_src elisp
@@ -692,154 +692,7 @@ Other entries should be inserted normal UUIDs to distinguish Zettels.
   	(tags urgency-down category-keep)
   	(search category-keep)))
 #+end_src
-*** Custom daily agenda (org-super-agenda)
-#+begin_src elisp
-  (add-to-list 'org-agenda-custom-commands
-        '("d" "Daily agenda"
-  	((agenda ""
-  		 ((org-agenda-span 'day)
-  		  (org-deadline-past-days 0)
-  		  (org-agenda-deadline-faces
-  		   '((1.0 . org-scheduled-today)
-  		     (0.5 . org-scheduled)
-  		     (0.0 . org-scheduled)))
-  		  (org-agenda-overriding-header "Events")
-  		  (org-super-agenda-groups
-  		   '((:name "Events"
-  			    :tag ("event"))
-  		     (:discard (:anything))))
-  		  (org-agenda-buffer-name "*Org Daily Agenda*")))
-  	 
-  	 (agenda ""
-  		 ((org-agenda-span 'day)
-  		  (org-agenda-overriding-header "Today")
-  		  (org-super-agenda-groups
-  		   '((:discard (:tag "event"))
-  		     (:name "Fleeting notes"
-  			    :and (:tag "fleeting"
-  				       :not (:todo ("DONE")))
-  			    :order 1)
-  		     (:name "School"
-  			    :and (:todo t
-  					:tag ("school" "내신")))
-  		     (:name "202512mid (temp)"
-  			    :and (:todo t
-  					:tag ("202512mid")))
-  		     (:name "Todo"
-  			    :and (:todo ("TODO" "WORKING")
-  					:not (:tag "fleeting")))
-  		     (:name "Journals"
-  			    :tag "journal"
-  			    :order 2)
-  		     (:name "Today"
-  			    :time-grid t
-  			    :order 2))))))))
-#+end_src
-*** Custom project agenda
-#+begin_src elisp
-  (add-to-list 'org-agenda-custom-commands
-  	     '("p" "Projects"
-  	       ((tags "current_project"
-  		      ((org-agenda-prefix-format '((tags . "- ")))
-  		       (org-agenda-overriding-header "Current projects")
-  		       (org-agenda-remove-tags t)))
-  		(tags "project|current_project"
-  		      ((org-agenda-prefix-format '((tags . "- ")))
-  		       (org-agenda-overriding-header "All projects")
-  		       (org-agenda-remove-tags t))))))
-#+end_src
 ** Org-capture
-#+begin_src elisp
-  (setq org-capture-templates nil)
-#+end_src
-*** Random thoughts (journaling)
-Integrate with org-journal.
-#+begin_src elisp
-(defun me:org-journal-find-location ()
-  (org-journal-new-entry t)
-  (goto-char (point-max))
-  (recenter-top-bottom 0))
-
-(add-to-list 'org-capture-templates
-	     `("c" "Random thought"
-	       plain (function me:org-journal-find-location)
-	       "** %T %?"))
-#+end_src
-*** Zettelkasten entry
-#+begin_src elisp
-  (add-to-list 'org-capture-templates
-  	     `("z" "Zettel"
-  	       entry (file ,(expand-file-name "zk-current.org" me:note-zk-directory))
-  	       "* %?"
-  	       :jump-to-captured t))
-#+end_src
-*** Fleeting note
-#+begin_src elisp
-(add-to-list 'org-capture-templates
-	     `("f" "Fleeting note"
-	       entry (file ,(expand-file-name "fleeting.org" me:note-root-directory))
-	       "* IDEA %t %?"
-	       :prepend t
-	       :empty-lines-before 1))
-#+end_src
-*** Fleeting note (elfeed)
-#+begin_src elisp
-  (add-to-list 'org-capture-templates
-  	     `("d" "Fleeting note (elfeed)"
-  	       entry (file ,(expand-file-name "fleeting.org" me:note-root-directory))
-  	       "* IDEA %t %?
-  [[%:external-link][%:title]]"
-  	       :prepend t))
-#+end_src
-*** Event
-#+begin_src elisp
-  (add-to-list 'org-capture-templates
-  	     `("e" "Event"
-  	       entry (file ,(expand-file-name "events.org" me:note-root-directory))
-  	       "* %? :event:"
-  	       :prepend t
-  	       :empty-lines-after 1))
-#+end_src
-*** Todo item
-#+begin_src elisp
-(add-to-list 'org-capture-templates
-	     `("t" "Todo item"
-	       entry (file ,(expand-file-name "todo.org" me:note-root-directory))
-	       "* TODO %?"
-	       :prepend t
-	       :empty-lines-after 1))
-#+end_src
-*** Baekjoon problem
-#+begin_src elisp
-  (add-to-list 'org-capture-templates
-  	     `("b" "Baekjoon problem"
-  	      entry (file ,(expand-file-name "problems/baekjoon.org" me:note-root-directory))
-  	      "* %t %^{id}. %^{title}
-  [[https://www.acmicpc.net/problem/%\\1][Baekjoon]]
-  ,** Ideas
-  %?"
-  	      :jump-to-captured t))
-#+end_src
-*** Programmers problem
-#+begin_src elisp
-  (add-to-list 'org-capture-templates
-  	     `("p" "Programmers problem"
-  	      entry (file ,(expand-file-name "problems/programmers.org" me:note-root-directory))
-  	      "* %t %^{id}. %^{title}
-  [[%^{url}][Programmers]]
-  ,** Ideas
-  %?"
-  	      :jump-to-captured t))
-#+end_src
-*** Captures
-#+begin_src elisp
-  (add-to-list 'org-capture-templates
-  	     `("v" "Capture"
-  	       entry (file ,(expand-file-name "captures.org" me:note-root-directory))
-  	       "* %T %^{person} %^{title}
-  %?"
-  	       :prepend t))
-#+end_src
 *** Change finalize shortcut
 I need to add tags inside the capture buffer.
 #+begin_src elisp
@@ -905,6 +758,197 @@ No need for carry overs.
   (require 'org-super-agenda)
   (org-super-agenda-mode)
 #+end_src
+* Custom agendas
+#+begin_src elisp
+  (setq org-agenda-custom-commands nil)
+#+end_src
+** Daily agenda
+#+begin_src elisp
+  (add-to-list 'org-agenda-custom-commands
+        '("d" "Daily agenda"
+  	((agenda ""
+  		 ((org-agenda-span 'day)
+  		  (org-deadline-past-days 0)
+  		  (org-agenda-deadline-faces
+  		   '((1.0 . org-scheduled-today)
+  		     (0.5 . org-scheduled)
+  		     (0.0 . org-scheduled)))
+  		  (org-agenda-overriding-header "Events")
+  		  (org-super-agenda-groups
+  		   '((:name "Events"
+  			    :tag ("event"))
+  		     (:discard (:anything))))
+  		  (org-agenda-buffer-name "*Org Daily Agenda*")))
+  	 
+  	 (agenda ""
+  		 ((org-agenda-span 'day)
+  		  (org-agenda-overriding-header "Today")
+  		  (org-super-agenda-groups
+  		   '((:discard (:tag "event"))
+  		     (:name "Fleeting notes"
+  			    :and (:tag "fleeting"
+  				       :not (:todo ("DONE")))
+  			    :order 1)
+  		     (:name "School"
+  			    :and (:todo t
+  					:tag ("school" "내신")))
+  		     (:name "202512mid (temp)"
+  			    :and (:todo t
+  					:tag ("202512mid")))
+  		     (:name "Todo"
+  			    :and (:todo ("TODO" "WORKING")
+  					:not (:tag "fleeting")))
+  		     (:name "Journals"
+  			    :tag "journal"
+  			    :order 2)
+  		     (:name "Today"
+  			    :time-grid t
+  			    :order 2))))))))
+#+end_src
+** Project agenda
+#+begin_src elisp
+  (add-to-list 'org-agenda-custom-commands
+  	     '("p" "Projects"
+  	       ((tags "current_project"
+  		      ((org-agenda-prefix-format '((tags . "- ")))
+  		       (org-agenda-overriding-header "Current projects")
+  		       (org-agenda-remove-tags t)))
+  		(tags "project|current_project"
+  		      ((org-agenda-prefix-format '((tags . "- ")))
+  		       (org-agenda-overriding-header "All projects")
+  		       (org-agenda-remove-tags t))))))
+#+end_src
+* Org-social
+#+begin_src elisp
+  (require 'org-social)
+#+end_src
+
+#+begin_src elisp
+  (setq org-social-file (expand-file-name "org_social_vfile" user-emacs-directory))
+  (setq org-social-relay "https://relay.org-social.org/")
+  (setq org-social-my-public-url "https://host.org-social.org/saram/social.org")
+#+end_src
+* Capture templates
+#+begin_src elisp
+  (setq org-capture-templates nil)
+#+end_src
+
+Groups
+#+begin_src elisp
+  (add-to-list 'org-capture-templates '("f" "Fleeting"))
+  (add-to-list 'org-capture-templates '("t" "Todo"))
+  (add-to-list 'org-capture-templates '("p" "Problem"))
+#+end_src
+
+** Random thoughts (journaling)
+Integrate with org-journal.
+#+begin_src elisp
+(defun me:org-journal-find-location ()
+  (org-journal-new-entry t)
+  (goto-char (point-max))
+  (recenter-top-bottom 0))
+
+(add-to-list 'org-capture-templates
+	     `("c" "Random thought"
+	       plain (function me:org-journal-find-location)
+	       "** %T %?"))
+#+end_src
+** Zettelkasten entry
+#+begin_src elisp
+  (add-to-list 'org-capture-templates
+  	     `("z" "Zettel"
+  	       entry (file ,(expand-file-name "zk-current.org" me:note-zk-directory))
+  	       "* %?"
+  	       :jump-to-captured t))
+#+end_src
+** Fleeting note
+#+begin_src elisp
+(add-to-list 'org-capture-templates
+	     `("ff" "Fleeting note"
+	       entry (file ,(expand-file-name "fleeting.org" me:note-root-directory))
+	       "* IDEA %t %?"
+	       :prepend t
+	       :empty-lines-before 1))
+#+end_src
+** Fleeting note (elfeed)
+#+begin_src elisp
+  (add-to-list 'org-capture-templates
+  	     `("fe" "Fleeting note (elfeed)"
+  	       entry (file ,(expand-file-name "fleeting.org" me:note-root-directory))
+  	       "* IDEA %t %?
+  [[%:external-link][%:title]]"
+  	       :prepend t))
+#+end_src
+** Event
+#+begin_src elisp
+  (add-to-list 'org-capture-templates
+  	     `("e" "Event"
+  	       entry (file ,(expand-file-name "events.org" me:note-root-directory))
+  	       "* %? :event:"
+  	       :prepend t
+  	       :empty-lines-after 1))
+#+end_src
+** Todo item
+#+begin_src elisp
+(add-to-list 'org-capture-templates
+	     `("tt" "Todo item"
+	       entry (file ,(expand-file-name "todo.org" me:note-root-directory))
+	       "* TODO %?"
+	       :prepend t
+	       :empty-lines-after 1))
+#+end_src
+** Baekjoon problem
+#+begin_src elisp
+  (add-to-list 'org-capture-templates
+  	     `("pb" "Baekjoon problem"
+  	      entry (file ,(expand-file-name "problems/baekjoon.org" me:note-root-directory))
+  	      "* %t %^{id}. %^{title}
+  [[https://www.acmicpc.net/problem/%\\1][Baekjoon]]
+  ,** Ideas
+  %?"
+  	      :jump-to-captured t))
+#+end_src
+** Programmers problem
+#+begin_src elisp
+  (add-to-list 'org-capture-templates
+  	     `("pp" "Programmers problem"
+  	      entry (file ,(expand-file-name "problems/programmers.org" me:note-root-directory))
+  	      "* %t %^{id}. %^{title}
+  [[%^{url}][Programmers]]
+  ,** Ideas
+  %?"
+  	      :jump-to-captured t))
+#+end_src
+** Captures
+#+begin_src elisp
+  (add-to-list 'org-capture-templates
+  	     `("v" "Capture"
+  	       entry (file ,(expand-file-name "captures.org" me:note-root-directory))
+  	       "* %T %^{person} %^{title}
+  %?"
+  	       :prepend t))
+#+end_src
+** Todo in a project
+#+begin_src elisp
+  (defun me:todo-project-find-location ()
+    (let ((project-file-name
+  	 (read-file-name "Project file name: " me:note-project-directory "" t nil
+  			 (lambda (name)
+  			   (not (or (backup-file-name-p name)
+  				    (auto-save-file-name-p name)))))))
+      (unless (string-empty-p project-file-name)
+        (find-file (expand-file-name project-file-name me:note-project-directory))    
+        (goto-char (point-min))
+        (unless (search-forward "* Todo" nil t)
+  	(goto-char (point-max))
+  	(insert "* Todo")))))
+
+  (add-to-list 'org-capture-templates
+  	     `("tp" "Todo (in a project)"
+  	       plain (function me:todo-project-find-location)
+  	       "** TODO %?"))
+#+end_src
+
 * Zettelkasten
 Depends on Org mode.
 ** ZK Major mode
@@ -1022,26 +1066,6 @@ Integrate with Org agenda mode.
 * Projects
 #+begin_src elisp
   (setq project-mode-line t)
-#+end_src
-** Add todo entry in a project
-#+begin_src elisp
-  (defun me:todo-project-find-location ()
-    (let ((project-file-name
-  	 (read-file-name "Project file name: " me:note-project-directory "" t nil
-  			 (lambda (name)
-  			   (not (or (backup-file-name-p name)
-  				    (auto-save-file-name-p name)))))))
-      (unless (string-empty-p project-file-name)
-        (find-file (expand-file-name project-file-name me:note-project-directory))    
-        (goto-char (point-min))
-        (unless (search-forward "* Todo" nil t)
-  	(goto-char (point-max))
-  	(insert "* Todo")))))
-
-  (add-to-list 'org-capture-templates
-  	     `("x" "Todo (in a project)"
-  	       plain (function me:todo-project-find-location)
-  	       "** TODO %?"))
 #+end_src
 * Dired
 ** Set ls command
