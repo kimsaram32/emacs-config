@@ -12,6 +12,26 @@
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file)
 #+end_src
+** Install
+#+begin_src elisp
+  (require 'flymake)
+  (require 'cc-mode)
+  (require 'yaml-mode)
+  (require 'org)
+  (require 'org-agenda)
+  (require 'org-capture)
+  (require 'org-journal)
+  (require 'org-super-agenda)
+  (require 'org-social)
+  (require 'rg)
+  (require 'elfeed)
+  (require 'modus-themes)
+  (require 'evil)
+  (require 'magit)
+  (require 'vterm)
+  (require 'auctex)
+  (require 'cdlatex)
+#+end_src
 * exec-path-from-shell
 #+begin_src elisp
 (when (memq window-system '(mac ns x))
@@ -414,7 +434,7 @@ To distinguish old markdown documents, I included fixed indicator
 strings to them.
 
 #+begin_src elisp
-(defconst me:markdown-indicator-string "###MARKDOWN###"
+(defconst me:markdown-indicator-string ""
   "String that indicates the current file is a markdown document.")
 #+end_src
 *** DWIM migration
@@ -443,9 +463,6 @@ Current stack is:
 - Emacs projects for workspace management
 
 ** Flymake
-#+begin_src elisp
-  (require 'flymake)
-#+end_src
 *** Next and previous error
 #+begin_src elisp
   (keymap-set flymake-mode-map "M-n" 'flymake-goto-next-error)
@@ -459,9 +476,6 @@ The default one is "python3".
 (setq python-shell-interpreter "python")
 #+end_src
 ** C Mode
-#+begin_src elisp
-  (require 'cc-mode)
-#+end_src
 
 #+begin_src elisp
   (setq c-default-style "bsd")
@@ -491,15 +505,123 @@ The default one is "python3".
 #+end_src
 ** Yaml
 #+begin_src elisp
-  (require 'yaml-mode)
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
 #+end_src
-* Org mode
+* Zettelkasten
+Depends on Org mode.
+** ZK Major mode
 #+begin_src elisp
-  (require 'org)
-  (require 'org-agenda)
-  (require 'org-capture)
+  (define-derived-mode me:zk-mode
+    org-mode "Zettelkasten"
+    "Major mode for Zettels.")
+
+  (add-to-list 'auto-mode-alist `("zk-.+?\\.org" . me:zk-mode))
 #+end_src
+** helper: Goto top level heading
+#+begin_src elisp
+(defun me:org-goto-top-level-heading ()
+  "Goto upmost heading."
+  (interactive)
+  (while (org-up-heading-safe) nil))
+#+end_src
+** Predicate for zettel file names
+#+begin_src elisp
+(defun me:is-zettel-name-p (name)
+  "Return t if NAME is a file name to a zettel. else return nill."
+  (string-suffix-p "zk/" (file-name-directory name)))
+#+end_src
+** Get zettel timestamp
+#+begin_src elisp
+(defun me:get-zettel-timestamp ()
+  "Get zettel timestamp for current time."
+  (format-time-string me:zettel-id-format))
+#+end_src
+** Get zettel id for current entry
+#+begin_src elisp
+  (defun me:entry-zettel-id ()
+    "Return the zettel ID of current entry."
+    (save-excursion
+      (me:org-goto-top-level-heading)
+      (let ((properties (org-entry-properties (point))))
+        (cdr (or (assoc "id" properties)
+  	       (assoc "ID" properties))))))
+
+  (defun me:entry-zettel-id-as-link ()
+    "Return the zettel ID of current entry as Org link format."
+    (interactive)
+    (let ((id (me:entry-zettel-id)))
+      (message id)
+      (format "[[id:%s][%s]]" id id)))
+
+  (keymap-set me:zk-mode-map "C-c z l" (lambda ()
+    				       (interactive)
+    				       (kill-new (me:entry-zettel-id-as-link))))
+#+end_src
+
+Integrate with Org agenda mode.
+
+#+begin_src elisp
+  (defun me:copy-zettel-link-in-agenda ()
+    "Add the zettel link to the kill ring from org-agenda-mode."
+    (interactive)
+    (let* ((marker (or (org-get-at-bol 'org-marker)
+  		     (org-agenda-error)))
+  	 (buffer (marker-buffer marker))
+  	 (pos (marker-position marker)))
+      (with-current-buffer buffer 
+        (widen)
+        (goto-char pos)
+        (kill-new (me:entry-zettel-id-as-link)))))
+
+  (keymap-set org-agenda-mode-map "C-c z l" 'me:copy-zettel-link-in-agenda)
+#+end_src
+** Managing properties
+*** Set the ID property
+#+begin_src elisp
+  (defun me:set-zettel-id-property ()
+    "Set zettel ID of the current entry, if it's not set."
+    (interactive)
+    (save-excursion
+      (me:org-goto-top-level-heading)
+      (unless (org-entry-get (point) "id")
+        (org-entry-put (point) "ID" (me:get-zettel-timestamp)))))
+#+end_src
+*** Set date properties
+#+begin_src elisp
+  (defun me:set-date-properties ()
+    "Update the 'updated' property of current buffer as current date.
+  Also update the 'created' property if one does not exist."
+    (interactive)
+    (let ((date-string (format-time-string "%Y-%m-%d" (me:note-current-date))))
+      (save-excursion
+        (me:org-goto-top-level-heading)
+        (unless (org-entry-get (point) "created")
+  	(org-set-property "created" date-string))
+        (org-set-property "updated" (concat "<" date-string ">"))))
+    (message "Set date properties"))
+#+end_src
+*** Set all zettel properties
+#+begin_src elisp
+(defun me:set-zettel-properties ()
+  "Call `me:set-date-properties' and `me:set-zettel-id-property'."
+  (interactive)
+  (me:set-date-properties)
+  (me:set-zettel-id-property))
+(keymap-global-set "C-c z u" 'me:set-zettel-properties)
+#+end_src
+** Search for backlinks
+#+begin_src elisp
+  (defun me:zettel-search-backlinks ()
+    "Search for ZK backlinks for current entry."
+    (interactive)
+    (let ((prev org-agenda-buffer-name))
+      (setq org-agenda-buffer-name me:zk-backlinks-buffer-name)
+      (org-search-view nil (me:entry-zettel-id) nil)
+      (setq org-agenda-buffer-name prev)))
+
+  (keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
+#+end_src
+* Org mode
 ** Key bindings
 #+begin_src elisp
   (keymap-global-set "C-c l" 'org-store-link)
@@ -715,9 +837,6 @@ todo
 (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
 #+end_src
 * Org-journal
-#+begin_src elisp
-(require 'org-journal)
-#+end_src
 ** Key bindings
 Custom lambda functions for opening today's journal file,
 since creation of new entries is handled by org-capture.
@@ -755,7 +874,6 @@ No need for carry overs.
 #+end_src
 * Org-super-agenda
 #+begin_src elisp
-  (require 'org-super-agenda)
   (org-super-agenda-mode)
 #+end_src
 * Custom agendas
@@ -819,10 +937,6 @@ No need for carry overs.
   		       (org-agenda-remove-tags t))))))
 #+end_src
 * Org-social
-#+begin_src elisp
-  (require 'org-social)
-#+end_src
-
 #+begin_src elisp
   (setq org-social-file (expand-file-name "org_social_vfile" user-emacs-directory))
   (setq org-social-relay "https://relay.org-social.org/")
@@ -949,120 +1063,6 @@ Integrate with org-journal.
   	       "** TODO %?"))
 #+end_src
 
-* Zettelkasten
-Depends on Org mode.
-** ZK Major mode
-#+begin_src elisp
-  (define-derived-mode me:zk-mode
-    org-mode "Zettelkasten"
-    "Major mode for Zettels.")
-
-  (add-to-list 'auto-mode-alist `("zk-.+?\\.org" . me:zk-mode))
-#+end_src
-** helper: Goto top level heading
-#+begin_src elisp
-(defun me:org-goto-top-level-heading ()
-  "Goto upmost heading."
-  (interactive)
-  (while (org-up-heading-safe) nil))
-#+end_src
-** Predicate for zettel file names
-#+begin_src elisp
-(defun me:is-zettel-name-p (name)
-  "Return t if NAME is a file name to a zettel. else return nill."
-  (string-suffix-p "zk/" (file-name-directory name)))
-#+end_src
-** Get zettel timestamp
-#+begin_src elisp
-(defun me:get-zettel-timestamp ()
-  "Get zettel timestamp for current time."
-  (format-time-string me:zettel-id-format))
-#+end_src
-** Get zettel id for current entry
-#+begin_src elisp
-  (defun me:entry-zettel-id ()
-    "Return the zettel ID of current entry."
-    (save-excursion
-      (me:org-goto-top-level-heading)
-      (let ((properties (org-entry-properties (point))))
-        (cdr (or (assoc "id" properties)
-  	       (assoc "ID" properties))))))
-
-  (defun me:entry-zettel-id-as-link ()
-    "Return the zettel ID of current entry as Org link format."
-    (interactive)
-    (let ((id (me:entry-zettel-id)))
-      (message id)
-      (format "[[id:%s][%s]]" id id)))
-
-  (keymap-set me:zk-mode-map "C-c z l" (lambda ()
-    				       (interactive)
-    				       (kill-new (me:entry-zettel-id-as-link))))
-#+end_src
-
-Integrate with Org agenda mode.
-
-#+begin_src elisp
-  (defun me:copy-zettel-link-in-agenda ()
-    "Add the zettel link to the kill ring from org-agenda-mode."
-    (interactive)
-    (let* ((marker (or (org-get-at-bol 'org-marker)
-  		     (org-agenda-error)))
-  	 (buffer (marker-buffer marker))
-  	 (pos (marker-position marker)))
-      (with-current-buffer buffer 
-        (widen)
-        (goto-char pos)
-        (kill-new (me:entry-zettel-id-as-link)))))
-
-  (keymap-set org-agenda-mode-map "C-c z l" 'me:copy-zettel-link-in-agenda)
-#+end_src
-** Managing properties
-*** Set the ID property
-#+begin_src elisp
-  (defun me:set-zettel-id-property ()
-    "Set zettel ID of the current entry, if it's not set."
-    (interactive)
-    (save-excursion
-      (me:org-goto-top-level-heading)
-      (unless (org-entry-get (point) "id")
-        (org-entry-put (point) "ID" (me:get-zettel-timestamp)))))
-#+end_src
-*** Set date properties
-#+begin_src elisp
-  (defun me:set-date-properties ()
-    "Update the 'updated' property of current buffer as current date.
-  Also update the 'created' property if one does not exist."
-    (interactive)
-    (let ((date-string (format-time-string "%Y-%m-%d" (me:note-current-date))))
-      (save-excursion
-        (me:org-goto-top-level-heading)
-        (unless (org-entry-get (point) "created")
-  	(org-set-property "created" date-string))
-        (org-set-property "updated" (concat "<" date-string ">"))))
-    (message "Set date properties"))
-#+end_src
-*** Set all zettel properties
-#+begin_src elisp
-(defun me:set-zettel-properties ()
-  "Call `me:set-date-properties' and `me:set-zettel-id-property'."
-  (interactive)
-  (me:set-date-properties)
-  (me:set-zettel-id-property))
-(keymap-global-set "C-c z u" 'me:set-zettel-properties)
-#+end_src
-** Search for backlinks
-#+begin_src elisp
-  (defun me:zettel-search-backlinks ()
-    "Search for ZK backlinks for current entry."
-    (interactive)
-    (let ((prev org-agenda-buffer-name))
-      (setq org-agenda-buffer-name me:zk-backlinks-buffer-name)
-      (org-search-view nil (me:entry-zettel-id) nil)
-      (setq org-agenda-buffer-name prev)))
-
-  (keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
-#+end_src
 * Projects
 #+begin_src elisp
   (setq project-mode-line t)
@@ -1078,15 +1078,11 @@ Integrate with Org agenda mode.
 #+end_src
 * Rg
 #+begin_src elisp
-  (require 'rg)
   (keymap-set rg-mode-map "C-n" 'rg-next-file)
   (keymap-set rg-mode-map "C-p" 'rg-prev-file)
   (rg-enable-default-bindings)
 #+end_src
 * Elfeed
-#+begin_src elisp
-  (require 'elfeed)
-#+end_src
 ** Key bindings
 #+begin_src elisp
   (keymap-global-set "C-x w" 'elfeed)
@@ -1126,7 +1122,6 @@ Integrate with Org agenda mode.
 * Modus-themes
 #+begin_src elisp
   (require-theme 'modus-themes)
-  (require 'modus-themes)
 #+end_src
 ** Key bindings
 #+begin_src elisp
@@ -1144,13 +1139,18 @@ Integrate with Org agenda mode.
 * Evil
 I don't enable it by default but it's nice to have
 #+begin_src elisp
-  (require 'evil)
   (keymap-global-set "C-c e" 'evil-mode)
 #+end_src
-* Vterm
+* Magit
+** Org Mode bindings for section
 #+begin_src elisp
-  (require 'vterm)
+  (keymap-set magit-section-mode-map "C-c C-u" 'magit-section-up)
+  (keymap-set magit-section-mode-map "C-c C-n" 'magit-section-forward)
+  (keymap-set magit-section-mode-map "C-c C-p" 'magit-section-backward)
+  (keymap-set magit-section-mode-map "C-c C-f" 'magit-section-forward-sibling)
+  (keymap-set magit-section-mode-map "C-c C-b" 'magit-section-backward-sibling)
 #+end_src
+* Vterm
 * Man
 ** Manual program
 #+begin_src elisp
@@ -1160,13 +1160,10 @@ I don't enable it by default but it's nice to have
     (interactive)
     (setq-default manual-program (if (equal manual-program "man")
   				   "ssh vm-ubuntu man"
-  				 "man")))
+  				 "man"))
+    (message (format "Manual program is now `%s'" manual-program)))
 #+end_src
 * CDLaTeX
-#+begin_src elisp
-  (require 'auctex)
-  (require 'cdlatex)
-#+end_src
 * Window setup
 ** Org mode source code editing
 #+begin_src elisp
@@ -1179,7 +1176,9 @@ I don't enable it by default but it's nice to have
 #+begin_src elisp
   (add-to-list 'display-buffer-alist
   	     `((derived-mode help-mode)
-  	       (display-buffer-at-bottom)
+  	       (display-buffer-in-side-window)
+  	       (side . bottom)
+  	       (window-height . 0.5)
   	       (post-command-select-window . t)))
 #+end_src
 ** Info

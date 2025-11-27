@@ -1,3 +1,5 @@
+zmodload zsh/zprof
+
 if [[ ("$TERM_PROGRAM" == "WezTerm") && -z "$(tmux list-clients 2>/dev/null)" ]]; then
     exec tmux new -As main;
 fi
@@ -69,15 +71,18 @@ alias npx="corepack npx"
 export PATH="/Users/kimsaram32/.deno/bin:$PATH"
 
 export NVM_DIR="$HOME/.nvm"
-[ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
-[ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
+export NVM_ROOT="/opt/homebrew/opt/nvm"
+
+lazyload node nvm -- '[ -s "$NVM_ROOT/nvm.sh" ] && \. "$NVM_ROOT/nvm.sh"
+	   [ -s "$NVM_ROOT/etc/bash_completion.d/nvm" ] && \. "$NVM_ROOT/etc/bash_completion.d/nvm"
+'
 
 export PYENV_ROOT="$HOME/.pyenv"
-command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+lazyload pyenv -- 'export PATH="$PYENV_ROOT/bin:$PATH"
+	 eval "$(pyenv init -)"'
 
 export PATH="$HOME/.jenv/bin:$PATH"
-eval "$(jenv init -)"
+lazyload jenv -- 'eval "$(jenv init -)"'
 
 export PATH="$HOME/.local/bin/:$PATH"
 
