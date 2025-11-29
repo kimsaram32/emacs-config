@@ -22,6 +22,7 @@
   (require 'org-capture)
   (require 'org-journal)
   (require 'org-super-agenda)
+  (require 'org-ql)
   (require 'org-social)
   (require 'rg)
   (require 'elfeed)
@@ -299,7 +300,7 @@ nil."
          (forward-line 2)
          (when (is-empty-line-p)
            (insert "##delete##")))
-       (if (region-active-p) 'region nil))
+       nil (if (region-active-p) 'region nil))
     (delete-matching-lines "##delete##"))
 
   (keymap-global-set "C-c m h" 'me:org-remove-empty-lines-around-headings)
@@ -509,13 +510,19 @@ The default one is "python3".
 #+end_src
 * Zettelkasten
 Depends on Org mode.
+** Zettel file name regex
+#+begin_src elisp
+  (defconst me:zettel-file-name-regex
+    "zk-.+?\\.org$"
+    "Regex for matching zettel file names.")
+#+end_src
 ** ZK Major mode
 #+begin_src elisp
   (define-derived-mode me:zk-mode
     org-mode "Zettelkasten"
     "Major mode for Zettels.")
 
-  (add-to-list 'auto-mode-alist `("zk-.+?\\.org" . me:zk-mode))
+  (add-to-list 'auto-mode-alist `(me:zettel-file-name-regex . me:zk-mode))
 #+end_src
 ** helper: Goto top level heading
 #+begin_src elisp
@@ -526,9 +533,9 @@ Depends on Org mode.
 #+end_src
 ** Predicate for zettel file names
 #+begin_src elisp
-(defun me:is-zettel-name-p (name)
-  "Return t if NAME is a file name to a zettel. else return nill."
-  (string-suffix-p "zk/" (file-name-directory name)))
+  (defun me:is-zettel-name-p (name)
+    "Return t if NAME is a file name to a zettel. else return nill."
+    (string-match-p me:zettel-file-name-regex name))
 #+end_src
 ** Get zettel timestamp
 #+begin_src elisp
@@ -614,10 +621,10 @@ Integrate with Org agenda mode.
   (defun me:zettel-search-backlinks ()
     "Search for ZK backlinks for current entry."
     (interactive)
-    (let ((prev org-agenda-buffer-name))
-      (setq org-agenda-buffer-name me:zk-backlinks-buffer-name)
-      (org-search-view nil (me:entry-zettel-id) nil)
-      (setq org-agenda-buffer-name prev)))
+    (org-ql-search (org-agenda-files)
+      `(regexp ,(me:entry-zettel-id))
+      :title "Backlinks"
+      :buffer "*ZK Backlinks*"))
 
   (keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
 #+end_src
