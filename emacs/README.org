@@ -816,7 +816,7 @@ Other entries should be inserted normal UUIDs to distinguish Zettels.
 *** Sorting strategy
 #+begin_src elisp
   (setq org-agenda-sorting-strategy
-        '((agenda habit-up priority-up deadline-up category-keep)
+        '((agenda habit-up priority-down deadline-up category-keep)
   	(todo urgency-down category-keep)
   	(tags urgency-down category-keep)
   	(search category-keep)))
