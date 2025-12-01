@@ -30,6 +30,7 @@
   (require 'evil)
   (require 'magit)
   (require 'vterm)
+  (require 'rfc-mode)
   (require 'auctex)
   (require 'cdlatex)
 #+end_src
@@ -55,7 +56,12 @@ From [[https://karthinks.com/software/persistent-prefix-keymaps-in-emacs/][Persi
       (define-key keymap [remap keyboard-quit]
         		  (lambda ()
         		    (interactive)
-        		    (funcall me:transient-map--exit-func)))))
+        		    (funcall me:transient-map--exit-func)))
+      (keymap-set keymap "C-h"
+  		(lambda ()
+  		  (interactive)
+  		  (funcall me:transient-map--exit-func)
+  		  (describe-bindings prefix))))))
 
   (setq prefix-help-command #'me:repeated-prefix-help-command)
 #+end_src
@@ -1121,6 +1127,43 @@ Integrate with org-journal.
 
   (keymap-set elfeed-show-mode-map "w" 'me:elfeed-show-visit-eww)
 #+end_src
+** Managing 'to read' entries
+I often copy my elfeed entries to iPhone so I can read them while
+walking around.
+
+#+begin_src elisp
+  (defvar me:elfeed-to-read-list nil
+    "List for storing 'to read' entries.")
+#+end_src
+
+Add current entry to the list.
+#+begin_src elisp
+  (defun me:elfeed-show-add-to-read ()
+    "Add current entry to 'to read' list."
+    (interactive)
+    (when-let ((entry elfeed-show-entry))
+      (push entry me:elfeed-to-read-list)
+      (message "Addded entry to to-read list")))
+
+  (keymap-set elfeed-show-mode-map "a" 'me:elfeed-show-add-to-read)
+#+end_src
+
+Currently exporting is done by pushing the list to the mark ring.
+#+begin_src elisp
+  (defun me:elfeed-save-to-reads (keep-list)
+    "Push 'to read' entries to the mark ring and clear the list.
+  With a prefix argument, keep the list."
+    (interactive "P")
+    (kill-new (string-join
+  	     (mapcar
+  	      (lambda (entry) (elfeed-entry-link entry))
+  	      me:elfeed-to-read-list) 
+  	     "\n"))
+    (unless keep-list
+      (setq me:elfeed-to-read-list nil)))
+
+  (keymap-set elfeed-search-mode-map "l" 'me:elfeed-save-to-reads)
+#+end_src
 * Shr / EWW
 ** Set max width for readability
 #+begin_src elisp
@@ -1179,23 +1222,28 @@ I don't enable it by default but it's nice to have
   	     `(,(lambda (&rest args) org-src-mode)
   	       (display-buffer-at-bottom)))
 #+end_src
-** Help
+** Side window (bottom): Help and occur
 #+begin_src elisp
   (add-to-list 'display-buffer-alist
-  	     `((derived-mode help-mode)
+  	     `((or
+  		(derived-mode help-mode)
+  		(derived-mode occur-mode))
   	       (display-buffer-in-side-window)
   	       (side . bottom)
   	       (window-height . 0.5)
   	       (post-command-select-window . t)))
 #+end_src
-** Info
+** Side window (right): Info and apropos
 #+begin_src elisp
   (add-to-list 'display-buffer-alist
-  	     `((derived-mode Info-mode)
+  	     `((or
+  		(derived-mode Info-mode)
+  		(derived-mode apropos-mode))
   	       (display-buffer-reuse-mode-window display-buffer-in-side-window)
   	       (mode . Info-mode)
   	       (side . right)
-  	       (window-width . 0.5)))
+  	       (window-width . 0.5)
+  	       (post-command-select-window . t)))
 #+end_src
 ** Man
 #+begin_src elisp
