@@ -77,12 +77,8 @@ lazyload node nvm -- '[ -s "$NVM_ROOT/nvm.sh" ] && \. "$NVM_ROOT/nvm.sh"
 	   [ -s "$NVM_ROOT/etc/bash_completion.d/nvm" ] && \. "$NVM_ROOT/etc/bash_completion.d/nvm"
 '
 
-export PYENV_ROOT="$HOME/.pyenv"
-lazyload pyenv -- 'export PATH="$PYENV_ROOT/bin:$PATH"
-	 eval "$(pyenv init -)"'
-
 export PATH="$HOME/.jenv/bin:$PATH"
-lazyload jenv -- 'eval "$(jenv init -)"'
+lazyload jenv java -- 'eval "$(jenv init -)"'
 
 export PATH="$HOME/.local/bin/:$PATH"
 

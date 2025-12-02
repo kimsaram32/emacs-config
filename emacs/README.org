@@ -61,7 +61,7 @@ From [[https://karthinks.com/software/persistent-prefix-keymaps-in-emacs/][Persi
   		(lambda ()
   		  (interactive)
   		  (funcall me:transient-map--exit-func)
-  		  (describe-bindings prefix))))))
+  		  (describe-bindings prefix)))))
 
   (setq prefix-help-command #'me:repeated-prefix-help-command)
 #+end_src
@@ -222,8 +222,13 @@ to prevent resizing windows when changing fonts.
 (keymap-global-set "C-M-z" 'delete-pair)
 #+end_src
 * Windows
+** Display-buffer
 #+begin_src elisp
   (setq switch-to-buffer-obey-display-actions t)
+#+end_src
+** Winner mode
+#+begin_src elisp
+  (winner-mode)
 #+end_src
 * Buffers
 ** Default scratch buffer message
@@ -477,10 +482,8 @@ Current stack is:
 #+end_src
 ** Python
 *** Set shell interpreter
-The default one is "python3".
-
 #+begin_src elisp
-(setq python-shell-interpreter "python")
+(setq python-shell-interpreter "python3")
 #+end_src
 ** C Mode
 
@@ -528,7 +531,7 @@ Depends on Org mode.
     org-mode "Zettelkasten"
     "Major mode for Zettels.")
 
-  (add-to-list 'auto-mode-alist `(me:zettel-file-name-regex . me:zk-mode))
+  (add-to-list 'auto-mode-alist `(,me:zettel-file-name-regex . me:zk-mode))
 #+end_src
 ** helper: Goto top level heading
 #+begin_src elisp
@@ -622,7 +625,7 @@ Integrate with Org agenda mode.
   (me:set-zettel-id-property))
 (keymap-global-set "C-c z u" 'me:set-zettel-properties)
 #+end_src
-** Search for backlinks
+** Backlinks
 #+begin_src elisp
   (defun me:zettel-search-backlinks ()
     "Search for ZK backlinks for current entry."
@@ -633,6 +636,26 @@ Integrate with Org agenda mode.
       :buffer "*ZK Backlinks*"))
 
   (keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
+#+end_src
+** Structure note
+#+begin_src elisp
+  (defun me:zk-show-structure-note (tag)
+    "Show structure note for TAG."
+    (interactive (list
+  		(completing-read
+  		 "Tag: "
+  		 (org-global-tags-completion-table))))
+    (when-let* ((result (org-ql-select
+  			org-agenda-files
+  			`(tags ,(concat "@" tag))
+  			:action 'element-with-markers))
+  	      (m (plist-get (nth 1 (car result)) :org-marker)))
+      (pop-to-buffer-same-window (marker-buffer m))
+      (goto-char m)
+      (when (or (org-invisible-p) (org-invisible-p2)) (org-fold-show-context 'mark-goto))
+      (recenter 0)))
+
+  (keymap-global-set "C-c z s" #'me:zk-show-structure-note)
 #+end_src
 * Org mode
 ** Key bindings

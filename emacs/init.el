@@ -19,3 +19,4 @@ Do nothing if the current buffer is not in Emacs Lisp Mode."
 
 (org-babel-load-file (expand-file-name "README.org" user-emacs-directory))
 
+(put 'downcase-region 'disabled nil)
