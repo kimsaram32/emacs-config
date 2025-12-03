@@ -40,15 +40,29 @@ alias brewup="brew update && brew upgrade && brew doctor"
 #+end_src
 * Directories
 #+begin_src zsh
-  DIR_WS="~/me/ws"
-  DIR_DOTFILES="~/me/dotfiles"
+  DIR_WS="$HOME/me/ws"
+  DIR_DOTFILES="$HOME/me/dotfiles"
 
-  alias ws="cd $DIR_WS"
-  alias dot="cd $DIR_DOTFILES"
+  w () {
+      cd "$DIR_WS/$1"
+  }
+
+  wl () {
+      cd "$DIR_WS/learnings/$1"
+  }
+
+  wp () {
+      cd "$DIR_WS/projects/$1"
+  }
+
+  wo () {
+      cd "$DIR_WS/others/$1"
+  }
+
+  alias d="cd $DIR_DOTFILES"
 #+end_src
 * Aliases
 #+begin_src zsh
-  alias d="cd"
   alias g="git"
   alias l="ls -lah"
 #+end_src

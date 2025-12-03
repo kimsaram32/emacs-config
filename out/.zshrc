@@ -18,13 +18,27 @@ antidote load
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-DIR_WS="~/me/ws"
-DIR_DOTFILES="~/me/dotfiles"
+DIR_WS="$HOME/me/ws"
+DIR_DOTFILES="$HOME/me/dotfiles"
 
-alias ws="cd $DIR_WS"
-alias dot="cd $DIR_DOTFILES"
+w () {
+    cd "$DIR_WS/$1"
+}
 
-alias d="cd"
+wl () {
+    cd "$DIR_WS/learnings/$1"
+}
+
+wp () {
+    cd "$DIR_WS/projects/$1"
+}
+
+wo () {
+    cd "$DIR_WS/others/$1"
+}
+
+alias d="cd $DIR_DOTFILES"
+
 alias g="git"
 alias l="ls -lah"
 

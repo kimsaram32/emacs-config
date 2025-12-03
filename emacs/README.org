@@ -1089,7 +1089,7 @@ Integrate with org-journal.
       (unless (string-empty-p project-file-name)
         (find-file (expand-file-name project-file-name me:note-project-directory))    
         (goto-char (point-min))
-        (unless (search-forward "* Todo" nil t)
+        (unless (search-forward-regexp "^\\* Todo" nil t)
   	(goto-char (point-max))
   	(insert "* Todo")))))
 
