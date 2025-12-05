@@ -5,7 +5,7 @@
 * Packages
 ** Use Melpa
 #+begin_src elisp
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 #+end_src
 ** Setup Custom
 #+begin_src elisp
@@ -33,6 +33,9 @@
   (require 'rfc-mode)
   (require 'auctex)
   (require 'cdlatex)
+  (require 'markdown-mode)
+  (require 'company)
+  (require 'format-all)
 #+end_src
 * exec-path-from-shell
 #+begin_src elisp
@@ -473,16 +476,60 @@ strings to them.
 #+end_src
 * Programming
 Current stack is:
-- Flymake for diagnostics and syntax checking
 - Eglot for LSP client and general editor features
+- Format-all for formatting
+- Flymake for diagnostics and syntax checking
 - Xref
+- Company-mode for autocompletion
 - Emacs projects for workspace management
 
+** Eglot
+#+begin_src elisp
+  (keymap-set prog-mode-map "C-c C-r" #'eglot-rename)
+#+end_src
+** Disable tabs
+#+begin_src elisp
+  (setq-default indent-tabs-mode nil)
+#+end_src
 ** Flymake
 *** Next and previous error
 #+begin_src elisp
   (keymap-set flymake-mode-map "M-n" 'flymake-goto-next-error)
   (keymap-set flymake-mode-map "M-p" 'flymake-goto-prev-error)
+#+end_src
+** Company-mode
+#+begin_src elisp
+  ;; (add-hook 'prog-mode-hook #'company-mode)
+  (global-company-mode)
+#+end_src
+*** Active key bindings
+#+begin_src elisp
+  (keymap-set company-active-map "M-TAB" #'company-complete-selection)
+  (keymap-set company-active-map "M-n" #'company-select-next-or-abort)
+  (keymap-set company-active-map "M-p" #'company-select-previous-or-abort)
+  (keymap-set company-active-map "M-h" #'company-show-doc-buffer)
+#+end_src
+*** Global key bindings
+#+begin_src elisp
+  (keymap-global-set "C-M-i" #'company-complete)
+#+end_src
+*** Prog-mode key bindings
+Language major modes override key sequences I want to use,
+so bind them using a minor mode.
+#+begin_src elisp
+  (defvar-keymap me:prog-override-mode-map
+    :doc "Keymap for prog-mode overrides."
+    "M-TAB" #'company-complete)
+
+  (define-minor-mode me:prog-override-mode
+    "Minor mode for overriding some prog-mode key bindings."
+    :lighter "")
+
+  (add-hook 'prog-mode-hook #'me:prog-override-mode)
+#+end_src
+*** Idle delay
+#+begin_src elisp
+  (setq company-idle-delay 0)
 #+end_src
 ** Python
 *** Set shell interpreter
@@ -490,7 +537,6 @@ Current stack is:
 (setq python-shell-interpreter "python3")
 #+end_src
 ** C Mode
-
 #+begin_src elisp
   (setq c-default-style "bsd")
   (add-hook 'c-mode-hook
@@ -517,9 +563,17 @@ Current stack is:
   (keymap-set c-mode-map "C-M-x" 'me:c-next-defun-body)
   (keymap-set c-mode-map "C-M-y" 'me:c-previous-defun-body)
 #+end_src
+** JavaScript
+#+begin_src elisp
+  (setq js-indent-level 2)
+#+end_src
 ** Yaml
 #+begin_src elisp
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
+#+end_src
+** Format-all
+#+begin_src elisp
+  (keymap-set prog-mode-map "C-c C-f" #'format-all-region-or-buffer)
 #+end_src
 * Zettelkasten
 Depends on Org mode.
