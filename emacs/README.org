@@ -24,6 +24,7 @@
   (require 'org-super-agenda)
   (require 'org-ql)
   (require 'org-social)
+  (require 'org-bookmark-heading)
   (require 'rg)
   (require 'elfeed)
   (require 'modus-themes)
@@ -499,8 +500,7 @@ Current stack is:
 #+end_src
 ** Company-mode
 #+begin_src elisp
-  ;; (add-hook 'prog-mode-hook #'company-mode)
-  (global-company-mode)
+  (add-hook 'prog-mode-hook #'company-mode)
 #+end_src
 *** Active key bindings
 #+begin_src elisp
@@ -695,7 +695,66 @@ Integrate with Org agenda mode.
 
   (keymap-global-set "C-c z b" 'me:zettel-search-backlinks)
 #+end_src
-** Structure note
+** Registers
+Create a custom register type.
+#+begin_src elisp
+  (cl-defstruct zk-zettel-register
+    id)
+
+  (cl-defmethod register--type ((_regval zk-zettel-register)) 'zettel)
+
+  (cl-defmethod register-val-jump-to ((val zk-zettel-register) _arg)
+    (org-id-goto (zk-zettel-register-id val)))
+
+  (cl-defmethod register-val-describe ((val zk-zettel-register) _verbose)
+    (let* ((id (zk-zettel-register-id val))
+           (marker (org-id-find id 'marker))
+           (heading (if marker
+                        (with-current-buffer (marker-buffer marker)
+                          (save-excursion
+                            (goto-char marker)
+                            (org-get-heading t t t t)))
+                      "Entry not found")))
+      (princ (format "a zettel: %s (%s)" heading id))))
+
+  (cl-defmethod register-val-insert ((val zk-zettel-register))
+    (let ((id (zk-zettel-register-id val)))
+      (insert (format "[[id:%s][%s]]" id id))))
+#+end_src
+
+Override register command info data. Need to find a better approach
+#+begin_src elisp
+  (cl-defmethod register-command-info ((_command (eql insert-register)))
+    (make-register-preview-info
+     :types '(string number zettel)
+     :msg "Insert register `%s'"
+     :act 'insert
+     :smatch t
+     :noconfirm (memq register-use-preview '(nil never))))
+
+  (cl-defmethod register-command-info ((_command (eql jump-to-register)))
+    (make-register-preview-info
+     :types  '(window frame marker kmacro
+               file buffer file-query zettel)
+     :msg "Jump to register `%s'"
+     :act 'jump
+     :smatch t
+     :noconfirm (memq register-use-preview '(nil never))))
+#+end_src
+
+Store current zettel to register, overriding default binding
+#+begin_src elisp
+  (defun zk-zettel-to-register (register)
+    "Store current zettel at point in REGISTER.
+  Interactively, prompt for REGISTER using `register-read-with-preview'."
+    (interactive (list (register-read-with-preview
+                        "Store zettel in register: ")))
+    (add-hook 'kill-buffer-hook 'register-swap-out nil t)
+    (set-register register (make-zk-zettel-register :id (me:entry-zettel-id))))
+
+  (keymap-set me:zk-mode-map "C-x r SPC" #'zk-zettel-to-register)
+#+end_src
+** Jump to structure note
 #+begin_src elisp
   (defun me:zk-show-structure-note (tag)
     "Show structure note for TAG."
@@ -762,6 +821,11 @@ Those work well with repetitions.
     
   (keymap-set org-mode-map "C-c C-x TAB" 'me:org-toggle-subtree)
   (keymap-set me:zk-mode-map "TAB" 'me:org-toggle-subtree)
+#+end_src
+** Goto
+#+begin_src elisp
+  (setq org-goto-auto-isearch nil)
+  (setq org-goto-interface 'outline-path-completion)
 #+end_src
 ** Directories
 #+begin_src elisp
@@ -844,7 +908,7 @@ Dvisvgm configuration is patched for my environment...
 *** Tag inheritance
 Exprimenting with this
 #+begin_src elisp
-  (setq org-use-tag-inheritance '("work" "fleeting" "capture"))
+  (setq org-use-tag-inheritance '("fleeting" "capture"))
 #+end_src
 ** Todo
 *** Todo keywords
@@ -1337,6 +1401,10 @@ I don't enable it by default but it's nice to have
   (autoload 'gfm-mode "markdown-mode"
      "Major mode for editing GitHub Flavored Markdown files" t)
   (add-to-list 'auto-mode-alist '("README\\.md\\'" . gfm-mode))
+#+end_src
+* Minibuffer completion
+#+begin_src elisp
+  (remove-hook 'minibuffer-setup-hook #'company-mode)
 #+end_src
 * CDLaTeX
 * Window setup
