@@ -37,6 +37,7 @@
   (require 'markdown-mode)
   (require 'company)
   (require 'format-all)
+  (require 'eglot-booster)
 #+end_src
 * exec-path-from-shell
 #+begin_src elisp
@@ -1401,6 +1402,10 @@ I don't enable it by default but it's nice to have
   (autoload 'gfm-mode "markdown-mode"
      "Major mode for editing GitHub Flavored Markdown files" t)
   (add-to-list 'auto-mode-alist '("README\\.md\\'" . gfm-mode))
+#+end_src
+* Eglot-booster
+#+begin_src elisp
+  (eglot-booster-mode)
 #+end_src
 * Minibuffer completion
 #+begin_src elisp
