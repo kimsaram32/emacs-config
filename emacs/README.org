@@ -540,9 +540,12 @@ so bind them using a minor mode.
 ** C Mode
 #+begin_src elisp
   (setq c-default-style "bsd")
-  (add-hook 'c-mode-hook
-  	  (lambda ()
-  	    (setq c-basic-offset 2)))
+
+  (defun me:cc-mode-set-offset ()
+    (setq c-basic-offset 2))
+
+  (add-hook 'cc-mode-hook #'me:cc-mode-set-offset)
+  (add-hook 'c++-mode-hook #'me:cc-mode-set-offset)
 #+end_src
 *** Go to the body of the next defun
 #+begin_src elisp
@@ -1014,12 +1017,16 @@ I know what I'm doing
 
   With a prefix argument, do not insert the link and store it instead."
     (interactive)
-    (let ((name (read-from-minibuffer "image name (with extensions): ")))
+    (let ((temp-file-name (make-temp-file "tmp-"))
+          image-name)
       (when (not (eq 0 (call-process-shell-command
-  		    (format "pngpaste %s/%s" me:note-media-directory name)
+  		    (format "pngpaste %s" temp-file-name)
   		    nil nil)))
         (user-error "Attempted to paste non-image content"))
-      (insert (format "[[media:%s]]" name))))
+      (setq image-name (read-from-minibuffer "image name (with extensions): "))
+      (copy-file temp-file-name
+                 (expand-file-name image-name me:note-media-directory))
+      (insert (format "[[media:%s]]" image-name))))
 
   (keymap-set org-mode-map "C-c i" #'me:insert-image-from-clipboard)
 #+end_src
@@ -1166,6 +1173,15 @@ Integrate with org-journal.
   	       entry (file ,(expand-file-name "zk-current.org" me:note-zk-directory))
   	       "* %?"
   	       :jump-to-captured t))
+
+  (defun me:org-capture-setup-zettel ()
+    "Finish zettel captures."
+    (when (equal (plist-get org-capture-current-plist :description) "Zettel")
+      (if-let ((id (org-entry-get (point) "ID"))
+               (buf (plist-get org-capture-current-plist :buffer)))
+        (org-id-add-location id (buffer-file-name buf)))))
+
+  (add-hook 'org-capture-before-finalize-hook #'me:org-capture-setup-zettel)
 #+end_src
 ** Fleeting note
 #+begin_src elisp
@@ -1391,6 +1407,12 @@ I don't enable it by default but it's nice to have
   				   "ssh vm-ubuntu man"
   				 "man"))
     (message (format "Manual program is now `%s'" manual-program)))
+#+end_src
+* Info
+** Linux docs (VMs)
+#+begin_src elisp
+  (add-to-list 'Info-additional-directory-list
+                "/ssh:vm-ubuntu:/usr/share/info")
 #+end_src
 * Markdown-mode
 #+begin_src elisp
