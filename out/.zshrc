@@ -12,6 +12,13 @@ export LANG="en_US.UTF-8"
 
 alias brewup="brew update && brew upgrade && brew doctor"
 
+export BREW="/opt/homebrew"
+eval "$("$BREW/bin/brew" shellenv)"
+
+export LIBRARY_PATH="$LIBRARY_PATH:$BREW/lib/gcc/current"
+export LDFLAGS="-L$BREW/lib"
+export CPPFLAGS="-I$BREW/include"
+
 source /opt/homebrew/opt/antidote/share/antidote/antidote.zsh
 antidote load
 
@@ -66,6 +73,11 @@ fif () {
   fzf --delimiter / --with-nth -1 \
     --preview "highlight -O ansi -l {} 2> /dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
 }
+
+export LDFLAGS="-L/opt/homebrew/opt/tree-sitter@0.25/lib $LDFLAGS"
+export CPPFLAGS="-I/opt/homebrew/opt/tree-sitter@0.25/include $CPPFLAGS"
+
+export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/homebrew/opt/tree-sitter@0.25/lib/pkgconfig"
 
 export RESTIC_REPOSITORY=/Volumes/What/backups
 export RESTIC_PASSWORD_FILE=~/.restic_password

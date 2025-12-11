@@ -24,9 +24,18 @@ confirmations, etc.) must go above this block; everything else may go below.
 #+begin_src zsh
 export LANG="en_US.UTF-8"
 #+end_src
-* Brew
+* HomeBrew
 #+begin_src zsh
 alias brewup="brew update && brew upgrade && brew doctor"
+#+end_src
+** Path setup
+#+begin_src zsh
+  export BREW="/opt/homebrew"
+  eval "$("$BREW/bin/brew" shellenv)"
+
+  export LIBRARY_PATH="$LIBRARY_PATH:$BREW/lib/gcc/current"
+  export LDFLAGS="-L$BREW/lib"
+  export CPPFLAGS="-I$BREW/include"
 #+end_src
 * Antidote
 #+begin_src zsh
@@ -70,12 +79,13 @@ alias brewup="brew update && brew upgrade && brew doctor"
 #+begin_src zsh
 export PATH="/Users/kimsaram32/me/ws/bin:$PATH"
 #+end_src
-* PostgreSQL
+* Tools
+** postgresql@16
 #+begin_src zsh
 export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
 #+end_src
-* fzf
-** Default options
+** fzf
+*** Default options
 #+begin_src zsh
 export FZF_DEFAULT_OPTS=" \
   --preview 'bat --color=always {}' --preview-window up \
@@ -87,7 +97,7 @@ export FZF_DEFAULT_OPTS=" \
     tmux send-keys Enter \
   ]\""
 #+end_src
-** Integration with rg
+*** Integration with rg
 #+begin_src zsh
 fif () {
   if [ ! "$#" -gt 0 ]
@@ -100,21 +110,28 @@ fif () {
     --preview "highlight -O ansi -l {} 2> /dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
 }
 #+end_src
-* restic
+** tree-sitter@0.25
+#+begin_src zsh
+  export LDFLAGS="-L/opt/homebrew/opt/tree-sitter@0.25/lib $LDFLAGS"
+  export CPPFLAGS="-I/opt/homebrew/opt/tree-sitter@0.25/include $CPPFLAGS"
+
+  export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/homebrew/opt/tree-sitter@0.25/lib/pkgconfig"
+#+end_src
+** restic
 #+begin_src zsh
 export RESTIC_REPOSITORY=/Volumes/What/backups
 export RESTIC_PASSWORD_FILE=~/.restic_password
 #+end_src
-* gnu-sed
+** gnu-sed
 #+begin_src zsh
 export PATH="/opt/homebrew/opt/gnu-sed/libexec/gnubin:$PATH"
 #+end_src
-* pnpm
+** pnpm
 #+begin_src zsh
 export PNPM_HOME="/Users/kimsaram32/Library/pnpm"
 export PATH="$PNPM_HOME:$PATH"
 #+end_src
-* Corepack
+** corepack
 #+begin_src zsh
 alias yarn="corepack yarn"
 alias yarnpkg="corepack yarnpkg"
@@ -123,11 +140,11 @@ alias pnpx="corepack pnpx"
 alias npm="corepack npm"
 alias npx="corepack npx"
 #+end_src
-* deno
+** deno
 #+begin_src zsh
 export PATH="/Users/kimsaram32/.deno/bin:$PATH"
 #+end_src
-* nvm
+** nvm
 #+begin_src zsh
   export NVM_DIR="$HOME/.nvm"
   export NVM_ROOT="/opt/homebrew/opt/nvm"
@@ -136,26 +153,26 @@ export PATH="/Users/kimsaram32/.deno/bin:$PATH"
   	   [ -s "$NVM_ROOT/etc/bash_completion.d/nvm" ] && \. "$NVM_ROOT/etc/bash_completion.d/nvm"
   '
 #+end_src
-* Jenv
+** jenv
 #+begin_src zsh
   export PATH="$HOME/.jenv/bin:$PATH"
   lazyload jenv java -- 'eval "$(jenv init -)"'
 #+end_src
-* uv
+** uv
 #+begin_src zsh
 export PATH="$HOME/.local/bin/:$PATH"
 #+end_src
-* mise
+** mise
 #+begin_src zsh
 eval "$(mise activate zsh)"
 export PATH=$PATH:$HOME/zk/bin
 #+end_src
-* go
+** go
 #+begin_src zsh
 export GOPATH="/Users/kimsaram32/go"
 export PATH="$GOPATH/bin:$PATH"
 #+end_src
-* Google Cloud SDK
+** gcloud
 #+begin_src zsh
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/Users/kimsaram32/.local/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/kimsaram32/.local/google-cloud-sdk/path.zsh.inc'; fi
@@ -163,7 +180,7 @@ if [ -f '/Users/kimsaram32/.local/google-cloud-sdk/path.zsh.inc' ]; then . '/Use
 # The next line enables shell command completion for gcloud.
 if [ -f '/Users/kimsaram32/.local/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/kimsaram32/.local/google-cloud-sdk/completion.zsh.inc'; fi
 #+end_src
-* Anaconda
+** conda
 #+begin_src zsh
 __conda_setup="$('/opt/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
