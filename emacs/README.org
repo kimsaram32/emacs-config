@@ -2,17 +2,8 @@
 #+startup: fold
 #+startup: hideblocks
 #+property: header-args:elisp :results silent :lexical t
-* Packages
-** Use Melpa
-#+begin_src elisp
-  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-#+end_src
-** Setup Custom
-#+begin_src elisp
-(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
-(load custom-file)
-#+end_src
-** Install
+* Load
+Small enhancement packages are not loaded here
 #+begin_src elisp
   (require 'flymake)
   (require 'cc-mode)
@@ -36,8 +27,18 @@
   (require 'cdlatex)
   (require 'markdown-mode)
   (require 'company)
-  (require 'format-all)
   (require 'eglot-booster)
+  (require 'format-all)
+#+end_src
+* Package installation
+** Use Melpa
+#+begin_src elisp
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+#+end_src
+** Setup Custom
+#+begin_src elisp
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(load custom-file)
 #+end_src
 * Environment
 ** Workaround: =Invalid function: org-element-with-disabled-cache=
@@ -80,72 +81,9 @@ From [[https://karthinks.com/software/persistent-prefix-keymaps-in-emacs/][Persi
 
   (setq prefix-help-command #'me:repeated-prefix-help-command)
 #+end_src
-* Apropos key bindings
-#+begin_src elisp
-(unbind-key "a" help-map)
-
-(keymap-set help-map "a a" 'apropos-command)
-(keymap-set help-map "a f" 'apropos-function)
-(keymap-set help-map "a v" 'apropos-variable)
-(keymap-set help-map "a u" 'apropos-user-option)
-(keymap-set help-map "a l" 'apropos-library)
-#+end_src
 * Use short answers
 #+begin_src elisp
   (setq use-short-answers t)
-#+end_src
-* Constants
-** Directories
-#+begin_src elisp
-  (defconst me:dotfiles-directory (expand-file-name "~/me/dotfiles")
-    "Root directory for dotfiles.")
-
-  (defconst me:note-root-directory (expand-file-name "~/me/myself/")
-    "Root directory for notes.")
-
-  (defconst me:note-periodic-directory
-    (file-name-concat me:note-root-directory "life/")
-    "Directory for periodic notes.")
-
-  (defconst me:note-project-directory
-    (file-name-concat me:note-root-directory "projects/")
-    "Directory for projects.")
-
-  (defconst me:note-zk-directory
-    (file-name-concat me:note-root-directory "zk/")
-    "Directory for Zettelkasten.")
-
-  (defconst me:note-media-directory
-    (file-name-concat me:note-root-directory "media/")
-    "Directory for media (e.g. images)")
-#+end_src
-** Starting hour of a day
-#+begin_src elisp
-(defconst me:note-day-start-hour 3 "The starting hour of a day for notes.")
-#+end_src
-** Get current day for the note system
-#+begin_src elisp
-(defun me:note-current-date ()
-  "Return current time value for the note system. If the time is before
-`me:note-day-start-hour', return yesterday's date. Otherwise, return
-today's date."
-  (let* ((time (decode-time))
-	 (current-day (decoded-time-day time))
-	 (day (if (< (decoded-time-hour time) me:note-day-start-hour)
-		  (- current-day 1)
-		current-day)))
-    (encode-time (append (list 0 0 0 day) (seq-subseq time 4)))))
-#+end_src
-** Zettelkasten
-Moved here to resolve cyclic dependency between Org Mode and ZK
-#+begin_src elisp
-  (defconst me:zettel-id-format
-    "%Y%m%d%H%M"
-    "The format for zettel IDs.")
-
-  (defconst me:zk-backlinks-buffer-name
-    "*ZK Backlinks*"
-    "Buffer name for displaying ZK backlinks.")
 #+end_src
 * UI and Display
 ** Remove bars
@@ -245,6 +183,14 @@ Key binding for =M-x append-to-register=.
 (setq delete-pair-blink-delay 0)
 (keymap-global-set "C-M-z" 'delete-pair)
 #+end_src
+* Minibuffer completions
+#+begin_src elisp
+  (setq completions-format 'one-column)
+#+end_src
+
+#+begin_src elisp
+  (keymap-set minibuffer-mode-map)
+#+end_src
 * Windows
 ** Display-buffer
 #+begin_src elisp
@@ -273,6 +219,65 @@ Key binding for =M-x append-to-register=.
   "Delete current buffer's file."
   (interactive)
   (delete-file (buffer-file-name)))
+#+end_src
+* Constants
+** Directories
+#+begin_src elisp
+  (defconst me:dotfiles-directory (expand-file-name "~/me/dotfiles")
+    "Root directory for dotfiles.")
+
+  (defconst me:note-root-directory (expand-file-name "~/me/myself/")
+    "Root directory for notes.")
+
+  (defconst me:note-periodic-directory
+    (file-name-concat me:note-root-directory "life/")
+    "Directory for periodic notes.")
+
+  (defconst me:note-project-directory
+    (file-name-concat me:note-root-directory "projects/")
+    "Directory for projects.")
+
+  (defconst me:note-zk-directory
+    (file-name-concat me:note-root-directory "zk/")
+    "Directory for Zettelkasten.")
+
+  (defconst me:note-media-directory
+    (file-name-concat me:note-root-directory "media/")
+    "Directory for media (e.g. images)")
+#+end_src
+** Files
+#+begin_src elisp
+  (defconst me:readme-org-file-name
+    (expand-file-name "emacs/README.org" me:dotfiles-directory)
+    "File name for README.org configuration file.")
+#+end_src
+** Starting hour of a day
+#+begin_src elisp
+(defconst me:note-day-start-hour 3 "The starting hour of a day for notes.")
+#+end_src
+** Get current day for the note system
+#+begin_src elisp
+(defun me:note-current-date ()
+  "Return current time value for the note system. If the time is before
+`me:note-day-start-hour', return yesterday's date. Otherwise, return
+today's date."
+  (let* ((time (decode-time))
+	 (current-day (decoded-time-day time))
+	 (day (if (< (decoded-time-hour time) me:note-day-start-hour)
+		  (- current-day 1)
+		current-day)))
+    (encode-time (append (list 0 0 0 day) (seq-subseq time 4)))))
+#+end_src
+** Zettelkasten
+Moved here to resolve cyclic dependency between Org Mode and ZK
+#+begin_src elisp
+  (defconst me:zettel-id-format
+    "%Y%m%d%H%M"
+    "The format for zettel IDs.")
+
+  (defconst me:zk-backlinks-buffer-name
+    "*ZK Backlinks*"
+    "Buffer name for displaying ZK backlinks.")
 #+end_src
 * Workflow
 ** Finish today
@@ -401,6 +406,7 @@ The path to the lua filter is hardcoded. This could be improved.
   - if ZK, transform links and add custom_id property.
   - if non-ZK, remove links as they are broken."
     (interactive)
+    (message "Converting markdown to Org...")
     (save-excursion
       (goto-char (point-min))
       (let* ((input-buffer (current-buffer))
@@ -444,7 +450,8 @@ The path to the lua filter is hardcoded. This could be improved.
   	    (save-excursion
   	      (replace-regexp "\\[\\[\\([0-9]+\\)]]" "[[id:\\1][\\1]]")))
   	(save-excursion
-  	  (replace-regexp "\\[\\[\\(.+?\\)\\]\\]" "\\1"))))))
+  	  (replace-regexp "\\[\\[\\(.+?\\)\\]\\]" "\\1")))))
+    (message "Done"))
 #+end_src
 *** Change verbatim to code
 Pandoc produces verbatim (=) in place of markdown code (`), but I
@@ -474,7 +481,7 @@ To distinguish old markdown documents, I included fixed indicator
 strings to them.
 
 #+begin_src elisp
-(defconst me:markdown-indicator-string ""
+(defconst me:markdown-indicator-string "###MARKDOWN###"
   "String that indicates the current file is a markdown document.")
 #+end_src
 *** DWIM migration
@@ -485,14 +492,16 @@ strings to them.
     (save-excursion
       (goto-char (point-min))
       (if (search-forward me:markdown-indicator-string nil t)
-  	(progn
+          (progn
   	  (replace-match "" nil t)
   	  (while (search-forward me:markdown-indicator-string nil t)
   	    (replace-match "" nil t))
   	  (me:migrate-markdown-to-org))
         (me:migrate-org-properties)
         (me:migrate-latex)
-        (me:org-remove-empty-lines-around-headings))))
+        ;; (me:org-remove-empty-lines-around-headings)
+        )
+      (message "DWIM migration finished.")))
   (keymap-global-set "C-c m m" 'me:migrate-dwim)
 #+end_src
 * Programming
@@ -812,7 +821,8 @@ Store current zettel to register, overriding default binding
   	      (m (plist-get (nth 1 (car result)) :org-marker)))
       (pop-to-buffer-same-window (marker-buffer m))
       (goto-char m)
-      (when (or (org-invisible-p) (org-invisible-p2)) (org-fold-show-context 'mark-goto))
+      (org-fold-show-context 'mark-goto)
+      (org-fold-show-subtree)
       (recenter 0)))
 
   (keymap-global-set "C-c z s" #'me:zk-show-structure-note)
@@ -864,11 +874,6 @@ Those work well with repetitions.
     
   (keymap-set org-mode-map "C-c C-x TAB" 'me:org-toggle-subtree)
   (keymap-set me:zk-mode-map "TAB" 'me:org-toggle-subtree)
-#+end_src
-** Goto
-#+begin_src elisp
-  (setq org-goto-auto-isearch nil)
-  (setq org-goto-interface 'outline-path-completion)
 #+end_src
 ** Directories
 #+begin_src elisp
@@ -1068,6 +1073,58 @@ I know what I'm doing
       (insert (format "[[media:%s]]" image-name))))
 
   (keymap-set org-mode-map "C-c i" #'me:insert-image-from-clipboard)
+#+end_src
+** Jump to heading
+Helper function to get all headings in a hierarchical format.
+#+begin_src elisp
+  (defun me:org-headings-hierarhcy-list (buffer)
+    "Return a list of all headings in org mode buffer BUFFER."
+    (with-current-buffer buffer
+      (org-map-entries
+       (lambda ()
+         (cons
+          (string-join (org-get-outline-path t) "/")
+          (point))))))
+#+end_src
+
+#+begin_src elisp
+  (defun me:org-jump-to-heading ()
+    "Ask for a heading in the current buffer, and jump to there."
+    (interactive)
+    (let* ((candidates
+            (me:org-headings-hierarhcy-list (current-buffer)))
+           (target
+            (map-elt candidates
+                     (completing-read "Jump to headline: "
+                                      candidates
+                                      nil 'require-match))))
+      (goto-char target)
+      (org-fold-show-context)
+      (org-fold-show-entry)))
+
+  (keymap-set org-mode-map "C-c C-j" #'me:org-jump-to-heading)
+#+end_src
+
+Quickly jump to =README.org= with a heading.
+#+begin_src elisp
+  (defun me:jump-to-readme-org ()
+    "Jump to a heading inside README.org."
+    (interactive)
+    (let* ((buf (or (get-file-buffer me:readme-org-file-name)
+                    (find-file-noselect me:readme-org-file-name)))
+           (candidates
+            (me:org-headings-hierarhcy-list buf))
+           (target
+            (map-elt candidates
+                     (completing-read "Jump to headline: "
+                                      candidates
+                                      nil 'require-match))))
+      (switch-to-buffer buf)
+      (goto-char target)
+      (org-fold-show-context)
+      (org-fold-show-entry)))
+
+  (keymap-global-set "C-c r" #'me:jump-to-readme-org)
 #+end_src
 ** I don't know what it does
 todo
@@ -1310,6 +1367,38 @@ Integrate with org-journal.
   	       "** TODO %?"))
 #+end_src
 
+* Help enhancements
+** Elisp-demos
+#+begin_src elisp
+  (require 'elisp-demos)
+#+end_src
+*** Help
+#+begin_src elisp
+  (advice-add 'describe-function-1 :after #'elisp-demos-advice-describe-function-1)
+#+end_src
+*** Helpful
+** Apropos key bindings
+#+begin_src elisp
+  (unbind-key "a" help-map)
+
+  (keymap-set help-map "a a" 'apropos-command)
+  (keymap-set help-map "a f" 'apropos-function)
+  (keymap-set help-map "a v" 'apropos-variable)
+  (keymap-set help-map "a u" 'apropos-user-option)
+  (keymap-set help-map "a l" 'apropos-library)
+#+end_src
+** Helpful
+#+begin_src elisp
+  (require 'helpful)
+#+end_src
+*** Replace keybindings
+#+begin_src elisp
+  (keymap-set help-map "f" #'helpful-function)
+  (keymap-set help-map "v" #'helpful-variable)
+  (keymap-set help-map "k" #'helpful-key)
+  (keymap-set help-map "x" #'helpful-command)
+  (keymap-set help-map "o" #'helpful-symbol)
+#+end_src
 * Dired
 ** Set ls command
 #+begin_src elisp
@@ -1318,6 +1407,26 @@ Integrate with org-journal.
 ** Delete by moving to trash
 #+begin_src elisp
   (setq delete-by-moving-to-trash t)
+#+end_src
+* Info
+** Linux docs (VMs)
+#+begin_src elisp
+  (add-to-list 'Info-additional-directory-list
+                "/ssh:vm-ubuntu:/usr/share/info")
+#+end_src
+* Shr / EWW
+** Set max width for readability
+#+begin_src elisp
+(setq shr-max-width 80)
+#+end_src
+* Magit
+** Org Mode bindings for section
+#+begin_src elisp
+  (keymap-set magit-section-mode-map "C-c C-u" 'magit-section-up)
+  (keymap-set magit-section-mode-map "C-c C-n" 'magit-section-forward)
+  (keymap-set magit-section-mode-map "C-c C-p" 'magit-section-backward)
+  (keymap-set magit-section-mode-map "C-c C-f" 'magit-section-forward-sibling)
+  (keymap-set magit-section-mode-map "C-c C-b" 'magit-section-backward-sibling)
 #+end_src
 * Rg
 #+begin_src elisp
@@ -1394,11 +1503,6 @@ Currently exporting is done by pushing the list to the mark ring.
 
   (keymap-set elfeed-search-mode-map "l" 'me:elfeed-save-to-reads)
 #+end_src
-* Shr / EWW
-** Set max width for readability
-#+begin_src elisp
-(setq shr-max-width 80)
-#+end_src
 * Modus-themes
 #+begin_src elisp
   (require-theme 'modus-themes)
@@ -1421,15 +1525,6 @@ I don't enable it by default but it's nice to have
 #+begin_src elisp
   (keymap-global-set "C-c e" 'evil-mode)
 #+end_src
-* Magit
-** Org Mode bindings for section
-#+begin_src elisp
-  (keymap-set magit-section-mode-map "C-c C-u" 'magit-section-up)
-  (keymap-set magit-section-mode-map "C-c C-n" 'magit-section-forward)
-  (keymap-set magit-section-mode-map "C-c C-p" 'magit-section-backward)
-  (keymap-set magit-section-mode-map "C-c C-f" 'magit-section-forward-sibling)
-  (keymap-set magit-section-mode-map "C-c C-b" 'magit-section-backward-sibling)
-#+end_src
 * Man
 ** Manual program
 #+begin_src elisp
@@ -1441,12 +1536,6 @@ I don't enable it by default but it's nice to have
   				   "ssh vm-ubuntu man"
   				 "man"))
     (message (format "Manual program is now `%s'" manual-program)))
-#+end_src
-* Info
-** Linux docs (VMs)
-#+begin_src elisp
-  (add-to-list 'Info-additional-directory-list
-                "/ssh:vm-ubuntu:/usr/share/info")
 #+end_src
 * Markdown-mode
 #+begin_src elisp
@@ -1463,7 +1552,6 @@ I don't enable it by default but it's nice to have
 #+begin_src elisp
   (eglot-booster-mode)
 #+end_src
-* CDLaTeX
 * Window setup
 ** Org mode source code editing
 #+begin_src elisp
@@ -1477,6 +1565,7 @@ I don't enable it by default but it's nice to have
   (add-to-list 'display-buffer-alist
   	     `((or
   		(derived-mode help-mode)
+                  (derived-mode helpful-mode)
   		(derived-mode occur-mode))
   	       (display-buffer-in-side-window)
   	       (side . bottom)
