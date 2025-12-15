@@ -592,7 +592,7 @@ so bind them using a minor mode.
   (defun me:cc-mode-set-offset ()
     (setq c-basic-offset 2))
 
-  (add-hook 'cc-mode-hook #'me:cc-mode-set-offset)
+  (add-hook 'c-mode-hook #'me:cc-mode-set-offset)
   (add-hook 'c++-mode-hook #'me:cc-mode-set-offset)
 #+end_src
 **** Go to the body of the next defun
@@ -914,15 +914,15 @@ Use indented headings.
 *** dvisvgm
 Dvisvgm configuration is patched for my environment...
 #+begin_src elisp
-(add-to-list 'org-preview-latex-process-alist
-	     '(dvisvgm :programs ("latex" "dvisvgm") :description "dvi > svg"
-		       :message
-		       "you need to install the programs: latex and dvisvgm."
-		       :image-input-type "dvi" :image-output-type "svg"
-		       :image-size-adjust (1.7 . 1.5) :latex-compiler
-		       ("latex -interaction nonstopmode -output-directory %o %f")
-		       :image-converter
-		       ("TEXMFCNF=\"/usr/local/texlive/2025:$TEXMFCNF\" dvisvgm --no-fonts --exact-bbox --scale=%S --output=%O --keep %f")))
+  (add-to-list 'org-preview-latex-process-alist
+  	     '(dvisvgm :programs ("latex" "dvisvgm") :description "dvi > svg"
+  		       :message
+  		       "you need to install the programs: latex and dvisvgm."
+  		       :image-input-type "dvi" :image-output-type "svg"
+  		       :image-size-adjust (1.2 . 1.5) :latex-compiler
+  		       ("latex -interaction nonstopmode -output-directory %o %f")
+  		       :image-converter
+  		       ("TEXMFCNF=\"/usr/local/texlive/2025:$TEXMFCNF\" dvisvgm --no-fonts --exact-bbox --scale=%S --output=%O --keep %f")))
 #+end_src
 *** Use dvisvgm for inline preview
 #+begin_src elisp
