@@ -563,21 +563,22 @@ so bind them using a minor mode.
 ** Tree-sitter
 #+begin_src elisp
   (setq treesit-language-source-alist
-     '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-       (cmake "https://github.com/uyha/tree-sitter-cmake")
-       (css "https://github.com/tree-sitter/tree-sitter-css")
-       (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-       (go "https://github.com/tree-sitter/tree-sitter-go")
-       (html "https://github.com/tree-sitter/tree-sitter-html")
-       (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
-       (json "https://github.com/tree-sitter/tree-sitter-json")
-       (make "https://github.com/alemuller/tree-sitter-make")
-       (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-       (python "https://github.com/tree-sitter/tree-sitter-python")
-       (toml "https://github.com/tree-sitter/tree-sitter-toml")
-       (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
-       (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-       (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+        '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+          (c "https://github.com/tree-sitter/tree-sitter-c")
+          (cmake "https://github.com/uyha/tree-sitter-cmake")
+          (css "https://github.com/tree-sitter/tree-sitter-css")
+          (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+          (go "https://github.com/tree-sitter/tree-sitter-go")
+          (html "https://github.com/tree-sitter/tree-sitter-html")
+          (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+          (json "https://github.com/tree-sitter/tree-sitter-json")
+          (make "https://github.com/alemuller/tree-sitter-make")
+          (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+          (python "https://github.com/tree-sitter/tree-sitter-python")
+          (toml "https://github.com/tree-sitter/tree-sitter-toml")
+          (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+          (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+          (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 #+end_src
 ** Languages
 *** Python
@@ -585,15 +586,12 @@ so bind them using a minor mode.
 #+begin_src elisp
 (setq python-shell-interpreter "python3")
 #+end_src
-*** C Mode
+*** C (TS)
 #+begin_src elisp
-  (setq c-default-style "bsd")
-
-  (defun me:cc-mode-set-offset ()
-    (setq c-basic-offset 2))
-
-  (add-hook 'c-mode-hook #'me:cc-mode-set-offset)
-  (add-hook 'c++-mode-hook #'me:cc-mode-set-offset)
+  (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
+  ; (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
+  (setq c-ts-mode-indent-style 'bsd)
+  (setq c-ts-mode-indent-offset 2)
 #+end_src
 **** Go to the body of the next defun
 #+begin_src elisp
