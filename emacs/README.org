@@ -29,6 +29,8 @@ Small enhancement packages are not loaded here
   (require 'company)
   (require 'eglot-booster)
   (require 'format-all)
+  (require 'docker)
+  (require 'rainbow-mode)
 #+end_src
 * Package installation
 ** Use Melpa
@@ -134,6 +136,10 @@ to prevent resizing windows when changing fonts.
 (keymap-set tab-prefix-map "[" 'tab-previous)
 (setq tab-bar-auto-width-max '((140) 20))
 #+end_src
+** Electric pair mode
+#+begin_src elisp
+  (electric-pair-mode)
+#+end_src
 ** Visual line mode
 #+begin_src elisp
 (visual-line-mode)
@@ -186,10 +192,6 @@ Key binding for =M-x append-to-register=.
 * Minibuffer completions
 #+begin_src elisp
   (setq completions-format 'one-column)
-#+end_src
-
-#+begin_src elisp
-  (keymap-set minibuffer-mode-map)
 #+end_src
 * Windows
 ** Display-buffer
@@ -585,6 +587,11 @@ so bind them using a minor mode.
 **** Set shell interpreter
 #+begin_src elisp
 (setq python-shell-interpreter "python3")
+#+end_src
+*** CSS
+Use rainbow mode.
+#+begin_src elisp
+  (add-hook 'css-ts-mode-hook #'rainbow-mode)
 #+end_src
 *** C (TS)
 #+begin_src elisp
@@ -1526,14 +1533,19 @@ I don't enable it by default but it's nice to have
 * Man
 ** Manual program
 #+begin_src elisp
-  (defun me:man-toggle-remote ()
-    "Toggles whether `man' uses Linux VM or current machine (Mac)
-  for man command."
+  (defvar me:man-manual-programs
+    '("ssh vm-ubuntu man"
+      "ssh vm-x64 man"
+      "man"))
+
+  (defun me:man-change-program ()
+    "Change the program to use in man."
     (interactive)
-    (setq-default manual-program (if (equal manual-program "man")
-  				   "ssh vm-ubuntu man"
-  				 "man"))
+    (setq-default manual-program (completing-read "Manual program: "
+                                                  me:manual-programs))
     (message (format "Manual program is now `%s'" manual-program)))
+
+  (keymap-global-set "C-c v m" #'me:man-change-program)
 #+end_src
 * Markdown-mode
 #+begin_src elisp
@@ -1549,6 +1561,11 @@ I don't enable it by default but it's nice to have
 * Eglot-booster
 #+begin_src elisp
   (eglot-booster-mode)
+#+end_src
+* Docker
+Manage Docker in Emacs.
+#+begin_src elisp
+  (keymap-global-set "C-c d" #'docker)
 #+end_src
 * Window setup
 ** Org mode source code editing
