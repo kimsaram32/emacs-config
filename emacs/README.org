@@ -1480,19 +1480,39 @@ walking around.
     "List for storing 'to read' entries.")
 #+end_src
 
-Add current entry to the list.
+My workflow is the following: I go through the unread entries, and for
+each entry, I hit =a= to add it, and =s= to skip. When I'm done, I
+export the entries to clipboard, paste them to Notes app, and read
+them on my iPhone.
+
+Add current entry to the list with =a=.
 #+begin_src elisp
   (defun me:elfeed-show-add-to-read ()
-    "Add current entry to 'to read' list."
+    "Add current entry to 'to read' list and go to the next entry."
     (interactive)
     (when-let ((entry elfeed-show-entry))
       (push entry me:elfeed-to-read-list)
-      (message "Addded entry to to-read list")))
+      (elfeed-show-tag 'unread 'to-read-list)
+      (message "Addded entry to to-read list")
+      (elfeed-show-next)))
 
   (keymap-set elfeed-show-mode-map "a" 'me:elfeed-show-add-to-read)
 #+end_src
 
-Currently exporting is done by pushing the list to the mark ring.
+Skip current entry with =s=.
+#+begin_src elisp
+  (defun me:elfeed-show-skip ()
+    "Skip the current entry.
+
+  Mark the entry as unread and go to the next entry."
+    (interactive)
+    (elfeed-show-tag 'unread)
+    (elfeed-show-next))
+
+  (keymap-set elfeed-show-mode-map "f" #'me:elfeed-show-skip)
+#+end_src
+
+Currently, exporting is done by pushing the list to the mark ring.
 #+begin_src elisp
   (defun me:elfeed-save-to-reads (keep-list)
     "Push 'to read' entries to the mark ring and clear the list.
@@ -1530,7 +1550,37 @@ I don't enable it by default but it's nice to have
 #+begin_src elisp
   (keymap-global-set "C-c e" 'evil-mode)
 #+end_src
-* Man
+* VMs
+** VM List
+#+begin_src elisp
+  (defvar me:vms
+    '((:name "ARM Ubuntu" :ssh-hostname "vm-ubuntu" :utm-name "Linux")
+      (:name "x64 Debian" :ssh-hostname "vm-x64" :utm-name "Emulated Debian"))
+    "List of VMs.
+
+  Each entry is a plist with the following items:
+
+  name          The name for the VM.
+
+  ssh-hostname  The hostname for SSHing into the machine.
+  utm-name      The name of the VM in UTM.")
+#+end_src
+** UTM integration
+#+begin_src elisp
+  (defun me:vm-start-all ()
+    "Start all VMs."
+    (interactive)
+    (dolist (vm me:vms)
+      (shell-command (format "utmctl start \"%s\"" (plist-get vm :utm-name))))
+    (message (format "Successfully started %d VMs." (length me:vms))))
+
+  (defun me:vm-stop-all ()
+    "Stop all VMs."
+    (interactive)
+    (dolist (vm me:vms)
+      (shell-command (format "utmctl stop \"%s\"" (plist-get vm :utm-name))))
+    (message (format "Successfully stopped %d VMs." (length me:vms))))
+#+end_src
 ** Manual program
 #+begin_src elisp
   (defvar me:man-manual-programs
