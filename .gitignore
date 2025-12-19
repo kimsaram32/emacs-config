@@ -6,3 +6,6 @@
 # Personal
 emacs/elfeed.el
 emacs/elfeed.org
+emacs/lisp/sr-startup.el
+
+.DS_Store

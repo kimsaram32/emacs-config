@@ -2,7 +2,47 @@
 #+startup: fold
 #+startup: hideblocks
 #+property: header-args:elisp :results silent :lexical t
+
+* Constants
+** Directories
+#+begin_src elisp
+  (defconst me:dotfiles-directory (expand-file-name "~/me/dotfiles")
+    "Root directory for dotfiles.")
+
+  (defconst me:emacs-load-directory
+    (file-name-concat me:dotfiles-directory "emacs/lisp")
+    "Directory for personal lisp libraries.")
+
+  (defconst me:note-root-directory (expand-file-name "~/me/myself/")
+    "Root directory for notes.")
+
+  (defconst me:note-periodic-directory
+    (file-name-concat me:note-root-directory "life/")
+    "Directory for periodic notes.")
+
+  (defconst me:note-project-directory
+    (file-name-concat me:note-root-directory "projects/")
+    "Directory for projects.")
+
+  (defconst me:note-zk-directory
+    (file-name-concat me:note-root-directory "zk/")
+    "Directory for Zettelkasten.")
+
+  (defconst me:note-media-directory
+    (file-name-concat me:note-root-directory "media/")
+    "Directory for media (e.g. images)")
+#+end_src
+** Files
+#+begin_src elisp
+  (defconst me:readme-org-file-name
+    (expand-file-name "emacs/README.org" me:dotfiles-directory)
+    "File name for README.org configuration file.")
+#+end_src
 * Load
+#+begin_src elisp
+  (add-to-list 'load-path me:emacs-load-directory)
+#+end_src
+
 Small enhancement packages are not loaded here
 #+begin_src elisp
   (require 'flymake)
@@ -31,6 +71,11 @@ Small enhancement packages are not loaded here
   (require 'format-all)
   (require 'docker)
   (require 'rainbow-mode)
+#+end_src
+
+Personal libraries
+#+begin_src elisp
+  (require 'sr-startup)
 #+end_src
 * Package installation
 ** Use Melpa
@@ -142,7 +187,13 @@ to prevent resizing windows when changing fonts.
 #+end_src
 ** Visual line mode
 #+begin_src elisp
-(visual-line-mode)
+(global-visual-line-mode)
+#+end_src
+*** Disable on org agenda
+#+begin_src elisp
+  (add-hook 'org-agenda-mode-hook
+            (lambda ()
+              (visual-line-mode 0)))
 #+end_src
 ** Sentences
 #+begin_src elisp
@@ -222,37 +273,7 @@ Key binding for =M-x append-to-register=.
   (interactive)
   (delete-file (buffer-file-name)))
 #+end_src
-* Constants
-** Directories
-#+begin_src elisp
-  (defconst me:dotfiles-directory (expand-file-name "~/me/dotfiles")
-    "Root directory for dotfiles.")
-
-  (defconst me:note-root-directory (expand-file-name "~/me/myself/")
-    "Root directory for notes.")
-
-  (defconst me:note-periodic-directory
-    (file-name-concat me:note-root-directory "life/")
-    "Directory for periodic notes.")
-
-  (defconst me:note-project-directory
-    (file-name-concat me:note-root-directory "projects/")
-    "Directory for projects.")
-
-  (defconst me:note-zk-directory
-    (file-name-concat me:note-root-directory "zk/")
-    "Directory for Zettelkasten.")
-
-  (defconst me:note-media-directory
-    (file-name-concat me:note-root-directory "media/")
-    "Directory for media (e.g. images)")
-#+end_src
-** Files
-#+begin_src elisp
-  (defconst me:readme-org-file-name
-    (expand-file-name "emacs/README.org" me:dotfiles-directory)
-    "File name for README.org configuration file.")
-#+end_src
+* Workflow
 ** Starting hour of a day
 #+begin_src elisp
 (defconst me:note-day-start-hour 3 "The starting hour of a day for notes.")
@@ -270,18 +291,6 @@ today's date."
 		current-day)))
     (encode-time (append (list 0 0 0 day) (seq-subseq time 4)))))
 #+end_src
-** Zettelkasten
-Moved here to resolve cyclic dependency between Org Mode and ZK
-#+begin_src elisp
-  (defconst me:zettel-id-format
-    "%Y%m%d%H%M"
-    "The format for zettel IDs.")
-
-  (defconst me:zk-backlinks-buffer-name
-    "*ZK Backlinks*"
-    "Buffer name for displaying ZK backlinks.")
-#+end_src
-* Workflow
 ** Finish today
 #+begin_src elisp
   (defconst me:personal-git-repositories
@@ -514,12 +523,19 @@ Current stack is:
 - Xref
 - Company-mode for autocompletion
 - Emacs projects for workspace management
+- Experimenting with Combobulate for structured editing
 
 ** Eglot
 #+begin_src elisp
   (keymap-set prog-mode-map "C-c C-r" #'eglot-rename)
 #+end_src
-** Disable tabs
+** Tab settings
+Set tab width.
+#+begin_src elisp
+  (setq-default tab-width 2)
+#+end_src
+
+Disable tabs by default.
 #+begin_src elisp
   (setq-default indent-tabs-mode nil)
 #+end_src
@@ -582,6 +598,10 @@ so bind them using a minor mode.
           (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
           (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 #+end_src
+** Format-all
+#+begin_src elisp
+  (keymap-set prog-mode-map "C-c C-f" #'format-all-region-or-buffer)
+#+end_src
 ** Languages
 *** Python
 **** Set shell interpreter
@@ -620,6 +640,10 @@ Use rainbow mode.
   (keymap-set c-mode-map "C-M-x" 'me:c-next-defun-body)
   (keymap-set c-mode-map "C-M-y" 'me:c-previous-defun-body)
 #+end_src
+*** Go
+#+begin_src elisp
+  (keymap-set go-mode-map "C-c C-f" #'gofmt)
+#+end_src
 *** JavaScript
 #+begin_src elisp
   (setq js-indent-level 2)
@@ -628,12 +652,26 @@ Use rainbow mode.
 #+begin_src elisp
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
 #+end_src
-** Format-all
+** Combobulate
 #+begin_src elisp
-  (keymap-set prog-mode-map "C-c C-f" #'format-all-region-or-buffer)
+  (defun me:combobulate-display-tree-at-point ()
+    "Render a navigation tree around the node at point."
+    (interactive)
+    (combobulate-display-draw-node-tree (combobulate-node-at-point)))
 #+end_src
 * Zettelkasten
 Depends on Org mode.
+
+** Constants
+#+begin_src elisp
+  (defconst me:zettel-id-format
+    "%Y%m%d%H%M"
+    "The format for zettel IDs.")
+
+  (defconst me:zk-backlinks-buffer-name
+    "*ZK Backlinks*"
+    "Buffer name for displaying ZK backlinks.")
+#+end_src
 ** Zettel file name regex
 #+begin_src elisp
   (defconst me:zettel-file-name-regex
@@ -832,6 +870,57 @@ Store current zettel to register, overriding default binding
 
   (keymap-global-set "C-c z s" #'me:zk-show-structure-note)
 #+end_src
+* VMs
+I manage my virtual machines in Mac via UTM. UTM has its command-line
+utility named =utmctl=, so I can use it to work with UTM in Emacs.
+
+#+begin_src elisp
+  (require 'sr-vm)
+#+end_src
+
+** VM list
+#+begin_src elisp
+  (setq sr/vm-list
+        '((
+           :name "arm64 Ubuntu"
+           :ssh-hostname "vm-ubuntu"
+           :utm-name "arm64-ubuntu"
+           :poweroff-command "sudo poweroff"
+           :sudo-password-file "/Users/kimsaram32/me/secrets/vm-ubuntu-password.txt")
+          (
+           :name "x64 Debian"
+           :ssh-hostname "vm-x64"
+           :utm-name "x64-debian"
+           :poweroff-command "sudo poweroff"
+           :sudo-password-file "/Users/kimsaram32/me/secrets/vm-x64-password.txt")))
+#+end_src
+** Manual program
+#+begin_src elisp
+  (defun me:man-change-program ()
+    "Change the program to use in man."
+    (interactive)
+    (let* ((names (mapcar (lambda (vm) (plist-get vm :name)) me:vms))
+           (program-or-name (completing-read "Manual program: " names))
+           (is-program (or
+                        (string-prefix-p "ssh" program-or-name)
+                        (string-prefix-p "man" program-or-name)))
+           (command (if is-program
+                        program-or-name
+                      (format "ssh %s man"
+                              (plist-get (seq-find
+                                          (lambda (vm)
+                                            (equal program-or-name
+                                                   (plist-get vm :name)))
+                                          me:vms)
+                                         :ssh-hostname)))))
+      (setq-default manual-program command)
+      (message (format (if is-program
+                           "Manual program is now `%s'"
+                         "Using %s to get manual program")
+                       program-or-name))))
+
+  (keymap-global-set "C-c v m" #'me:man-change-program)
+#+end_src
 * Org mode
 ** Key bindings
 *** Global bindings
@@ -1023,23 +1112,31 @@ Other entries should be inserted normal UUIDs to distinguish Zettels.
 #+begin_src elisp
   (setq org-agenda-restore-windows-after-quit t)
 #+end_src
-*** Periodic display options
-#+begin_src elisp
-(setq org-agenda-span 14)
-#+end_src
-*** Deadline options
+*** Display options
+Deadline and schedules.
 #+begin_src elisp
   (setq org-agenda-todo-ignore-deadlines -1)
   (setq org-agenda-skip-deadline-prewarning-if-scheduled t)
   (setq org-agenda-skip-timestamp-if-deadline-is-shown t)
 #+end_src
-*** Sorting strategy
+
+Sorting strategy.
 #+begin_src elisp
   (setq org-agenda-sorting-strategy
         '((agenda habit-up priority-down deadline-up category-keep)
   	(todo urgency-down category-keep)
   	(tags urgency-down category-keep)
   	(search category-keep)))
+#+end_src
+*** Mode-specific display options
+Periodic display options.
+#+begin_src elisp
+  (setq org-agenda-span 14)
+#+end_src
+
+Tag matching display options.
+#+begin_src elisp
+  (setq org-tags-match-list-sublevels t)
 #+end_src
 ** Org-capture
 *** Change finalize shortcut
@@ -1131,8 +1228,7 @@ Quickly jump to =README.org= with a heading.
 
   (keymap-global-set "C-c r" #'me:jump-to-readme-org)
 #+end_src
-** I don't know what it does
-todo
+** todo
 #+begin_src elisp
 (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
 #+end_src
@@ -1382,6 +1478,9 @@ Integrate with org-journal.
   (advice-add 'describe-function-1 :after #'elisp-demos-advice-describe-function-1)
 #+end_src
 *** Helpful
+#+begin_src elisp
+  (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update)
+#+end_src
 ** Apropos key bindings
 #+begin_src elisp
   (unbind-key "a" help-map)
@@ -1408,6 +1507,10 @@ Integrate with org-journal.
 ** Set ls command
 #+begin_src elisp
   (setq dired-listing-switches "-hal")
+#+end_src
+** Omit mode
+#+begin_src elisp
+  (add-hook 'dired-mode-hook 'dired-omit-mode)
 #+end_src
 ** Delete by moving to trash
 #+begin_src elisp
@@ -1448,19 +1551,6 @@ Integrate with org-journal.
 #+begin_src elisp
   (setq elfeed-search-filter "+unread")
 #+end_src
-** Load entries
-#+begin_src elisp
-  (load (expand-file-name "elfeed.el" user-emacs-directory))
-  (elfeed-update)
-#+end_src
-** Unread current entry
-#+begin_src elisp
-  (defun me:elfeed-show-untag-unread ()
-    (interactive)
-    (elfeed-show-untag 'unread))
-
-  (keymap-set elfeed-show-mode-map "r" 'me:elfeed-show-untag-unread)
-#+end_src
 ** EWW Integration
 #+begin_src elisp
   (defun me:elfeed-show-visit-eww ()
@@ -1472,34 +1562,39 @@ Integrate with org-journal.
   (keymap-set elfeed-show-mode-map "w" 'me:elfeed-show-visit-eww)
 #+end_src
 ** Managing 'to read' entries
-I often copy my elfeed entries to iPhone so I can read them while
+I often copy my elfeed entries to my iPhone so I can read them while
 walking around.
 
 #+begin_src elisp
+  (defvar me:elfeed-to-read-tag 'to-read-list
+    "Elfeed tag for 'to read' entries.")
+
   (defvar me:elfeed-to-read-list nil
     "List for storing 'to read' entries.")
 #+end_src
 
-My workflow is the following: I go through the unread entries, and for
-each entry, I hit =a= to add it, and =s= to skip. When I'm done, I
-export the entries to clipboard, paste them to Notes app, and read
+My workflow is as follows: I go through the unread entries, and for
+each entry, I hit =a= to add it, and =s= to skip it. When I'm done, I
+export the entries to clipboard, paste them to the Notes app, and read
 them on my iPhone.
 
-Add current entry to the list with =a=.
+When I come back, I process the entries intoto fleeting notes. Then, I
+mark the entries as read.
+
+*** Add current entry to the list with =a=
 #+begin_src elisp
   (defun me:elfeed-show-add-to-read ()
     "Add current entry to 'to read' list and go to the next entry."
     (interactive)
     (when-let ((entry elfeed-show-entry))
       (push entry me:elfeed-to-read-list)
-      (elfeed-show-tag 'unread 'to-read-list)
+      (elfeed-show-tag 'unread me:elfeed-to-read-tag)
       (message "Addded entry to to-read list")
       (elfeed-show-next)))
 
   (keymap-set elfeed-show-mode-map "a" 'me:elfeed-show-add-to-read)
 #+end_src
-
-Skip current entry with =s=.
+*** Skip current entry with =s=
 #+begin_src elisp
   (defun me:elfeed-show-skip ()
     "Skip the current entry.
@@ -1511,8 +1606,11 @@ Skip current entry with =s=.
 
   (keymap-set elfeed-show-mode-map "f" #'me:elfeed-show-skip)
 #+end_src
+*** Export the entries with =l=
+Currently, exporting is done by pushing the list to the mark ring. I
+export the entries just before I leave, so I apply the filter to show
+only the entries in the reading list after I come back.
 
-Currently, exporting is done by pushing the list to the mark ring.
 #+begin_src elisp
   (defun me:elfeed-save-to-reads (keep-list)
     "Push 'to read' entries to the mark ring and clear the list.
@@ -1524,9 +1622,40 @@ Currently, exporting is done by pushing the list to the mark ring.
   	      me:elfeed-to-read-list) 
   	     "\n"))
     (unless keep-list
-      (setq me:elfeed-to-read-list nil)))
+      (setq me:elfeed-to-read-list nil))
+    (elfeed-search-set-filter "+to-read-list"))
 
   (keymap-set elfeed-search-mode-map "l" 'me:elfeed-save-to-reads)
+#+end_src
+** Mark entries as read
+In search mode:
+#+begin_src elisp
+  (defun me:elfeed-search-read ()
+    "Read elfeed entries in search mode."
+    (interactive)
+    (let ((entries (elfeed-search-selected)))
+      (elfeed-untag entries 'unread)
+      (elfeed-untag entries me:elfeed-to-read-tag)
+      (mapc #'elfeed-search-update-entry entries)
+      (unless (or elfeed-search-remain-on-entry (use-region-p))
+        (forward-line))))
+
+  (keymap-set elfeed-search-mode-map "r" #'me:elfeed-search-read)
+#+end_src
+
+In show mode:
+#+begin_src elisp
+  (defun me:elfeed-show-read ()
+    "Read current elfeed entry."
+    (interactive)
+    (elfeed-show-untag 'unread 'to-read-list))
+
+  (keymap-set elfeed-show-mode-map "r" #'me:elfeed-show-read)
+#+end_src
+** Load entries
+#+begin_src elisp
+  (load (expand-file-name "elfeed.el" user-emacs-directory))
+  (elfeed-update)
 #+end_src
 * Modus-themes
 #+begin_src elisp
@@ -1549,53 +1678,6 @@ Currently, exporting is done by pushing the list to the mark ring.
 I don't enable it by default but it's nice to have
 #+begin_src elisp
   (keymap-global-set "C-c e" 'evil-mode)
-#+end_src
-* VMs
-** VM List
-#+begin_src elisp
-  (defvar me:vms
-    '((:name "ARM Ubuntu" :ssh-hostname "vm-ubuntu" :utm-name "Linux")
-      (:name "x64 Debian" :ssh-hostname "vm-x64" :utm-name "Emulated Debian"))
-    "List of VMs.
-
-  Each entry is a plist with the following items:
-
-  name          The name for the VM.
-
-  ssh-hostname  The hostname for SSHing into the machine.
-  utm-name      The name of the VM in UTM.")
-#+end_src
-** UTM integration
-#+begin_src elisp
-  (defun me:vm-start-all ()
-    "Start all VMs."
-    (interactive)
-    (dolist (vm me:vms)
-      (shell-command (format "utmctl start \"%s\"" (plist-get vm :utm-name))))
-    (message (format "Successfully started %d VMs." (length me:vms))))
-
-  (defun me:vm-stop-all ()
-    "Stop all VMs."
-    (interactive)
-    (dolist (vm me:vms)
-      (shell-command (format "utmctl stop \"%s\"" (plist-get vm :utm-name))))
-    (message (format "Successfully stopped %d VMs." (length me:vms))))
-#+end_src
-** Manual program
-#+begin_src elisp
-  (defvar me:man-manual-programs
-    '("ssh vm-ubuntu man"
-      "ssh vm-x64 man"
-      "man"))
-
-  (defun me:man-change-program ()
-    "Change the program to use in man."
-    (interactive)
-    (setq-default manual-program (completing-read "Manual program: "
-                                                  me:manual-programs))
-    (message (format "Manual program is now `%s'" manual-program)))
-
-  (keymap-global-set "C-c v m" #'me:man-change-program)
 #+end_src
 * Markdown-mode
 #+begin_src elisp
@@ -1692,4 +1774,14 @@ Manage Docker in Emacs.
   	     `("\\*elfeed-"
   	       (display-buffer-in-tab)
   	       (tab-name . "Elfeed")))
+#+end_src
+** Tabulated list mode
+Major mode for browsing a list of items e.g. Docker mode.
+
+#+begin_src elisp
+  (add-to-list 'display-buffer-alist
+  	     `((derived-mode tabulated-list-mode)
+  	       (display-buffer-in-side-window)
+  	       (side . bottom)
+  	       (post-command-select-window . t)))
 #+end_src
