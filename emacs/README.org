@@ -896,10 +896,10 @@ utility named =utmctl=, so I can use it to work with UTM in Emacs.
 #+end_src
 ** Manual program
 #+begin_src elisp
-  (defun me:man-change-program ()
+  (defun sr/man-change-program ()
     "Change the program to use in man."
     (interactive)
-    (let* ((names (mapcar (lambda (vm) (plist-get vm :name)) me:vms))
+    (let* ((names (mapcar (lambda (vm) (plist-get vm :name)) sr/vm-list))
            (program-or-name (completing-read "Manual program: " names))
            (is-program (or
                         (string-prefix-p "ssh" program-or-name)
@@ -911,7 +911,7 @@ utility named =utmctl=, so I can use it to work with UTM in Emacs.
                                           (lambda (vm)
                                             (equal program-or-name
                                                    (plist-get vm :name)))
-                                          me:vms)
+                                          sr/vm-list)
                                          :ssh-hostname)))))
       (setq-default manual-program command)
       (message (format (if is-program
@@ -919,7 +919,7 @@ utility named =utmctl=, so I can use it to work with UTM in Emacs.
                          "Using %s to get manual program")
                        program-or-name))))
 
-  (keymap-global-set "C-c v m" #'me:man-change-program)
+  (keymap-global-set "C-c v m" #'sr/man-change-program)
 #+end_src
 * Org mode
 ** Key bindings
