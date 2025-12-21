@@ -734,9 +734,9 @@ Integrate with Org agenda mode.
     "Add the zettel link to the kill ring from org-agenda-mode."
     (interactive)
     (let* ((marker (or (org-get-at-bol 'org-marker)
-  		     (org-agenda-error)))
-  	 (buffer (marker-buffer marker))
-  	 (pos (marker-position marker)))
+  		                 (org-agenda-error)))
+  	       (buffer (marker-buffer marker))
+  	       (pos (marker-position marker)))
       (with-current-buffer buffer 
         (widen)
         (goto-char pos)
