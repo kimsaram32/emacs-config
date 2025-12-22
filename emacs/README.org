@@ -3,6 +3,7 @@
 #+startup: hideblocks
 #+property: header-args:elisp :results silent :lexical t
 
+* Emacs configuration
 * Constants
 ** Directories
 #+begin_src elisp
@@ -292,19 +293,21 @@ today's date."
     (encode-time (append (list 0 0 0 day) (seq-subseq time 4)))))
 #+end_src
 ** Finish today
+I finish each day by committing changes I made in my dotfiles and personal files into the Git repository.
+
 #+begin_src elisp
-  (defconst me:personal-git-repositories
+  (defconst sr/personal-git-repositories
     `((,me:dotfiles-directory . "dotfiles")
       (,me:note-root-directory . "notes"))
     "Git repositories for personal workflow.
   Used by `me:finish-today' for automatic daily commits.")
 
-  (defun me:finish-today ()
+  (defun sr/finish-today ()
     "Finish daily workflow; save all buffers associated with a file, commit
   changes in personal repositories."
     (interactive)
     (save-some-buffers t)
-    (dolist (repo me:personal-git-repositories)
+    (dolist (repo sr/personal-git-repositories)
       (let ((name (cdr repo))
   	  (default-directory (car repo))
   	  (subcommands `(("add" ".")
