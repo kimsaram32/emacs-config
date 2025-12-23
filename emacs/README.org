@@ -622,6 +622,8 @@ Use rainbow mode.
   ; (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
   (setq c-ts-mode-indent-style 'bsd)
   (setq c-ts-mode-indent-offset 2)
+
+  (add-to-list 'org-src-lang-modes '("C" . c-ts))
 #+end_src
 **** Go to the body of the next defun
 #+begin_src elisp
