@@ -51,6 +51,9 @@ alias l="ls -lah"
 
 export PATH="/Users/kimsaram32/me/ws/bin:$PATH"
 
+eval "$(mise activate zsh)"
+export PATH=$PATH:$HOME/zk/bin
+
 export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
 
 export FZF_DEFAULT_OPTS=" \
@@ -96,20 +99,7 @@ alias npx="corepack npx"
 
 export PATH="/Users/kimsaram32/.deno/bin:$PATH"
 
-export NVM_DIR="$HOME/.nvm"
-export NVM_ROOT="/opt/homebrew/opt/nvm"
-
-lazyload node nvm -- '[ -s "$NVM_ROOT/nvm.sh" ] && \. "$NVM_ROOT/nvm.sh"
-	   [ -s "$NVM_ROOT/etc/bash_completion.d/nvm" ] && \. "$NVM_ROOT/etc/bash_completion.d/nvm"
-'
-
-export PATH="$HOME/.jenv/bin:$PATH"
-lazyload jenv java -- 'eval "$(jenv init -)"'
-
 export PATH="$HOME/.local/bin/:$PATH"
-
-eval "$(mise activate zsh)"
-export PATH=$PATH:$HOME/zk/bin
 
 export GOPATH="/Users/kimsaram32/go"
 export PATH="$GOPATH/bin:$PATH"

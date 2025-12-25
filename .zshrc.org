@@ -79,6 +79,12 @@ alias brewup="brew update && brew upgrade && brew doctor"
 #+begin_src zsh
 export PATH="/Users/kimsaram32/me/ws/bin:$PATH"
 #+end_src
+* mise
+** Activate
+#+begin_src zsh
+  eval "$(mise activate zsh)"
+  export PATH=$PATH:$HOME/zk/bin
+#+end_src
 * Tools
 ** postgresql@16
 #+begin_src zsh
@@ -144,28 +150,9 @@ alias npx="corepack npx"
 #+begin_src zsh
 export PATH="/Users/kimsaram32/.deno/bin:$PATH"
 #+end_src
-** nvm
-#+begin_src zsh
-  export NVM_DIR="$HOME/.nvm"
-  export NVM_ROOT="/opt/homebrew/opt/nvm"
-
-  lazyload node nvm -- '[ -s "$NVM_ROOT/nvm.sh" ] && \. "$NVM_ROOT/nvm.sh"
-  	   [ -s "$NVM_ROOT/etc/bash_completion.d/nvm" ] && \. "$NVM_ROOT/etc/bash_completion.d/nvm"
-  '
-#+end_src
-** jenv
-#+begin_src zsh
-  export PATH="$HOME/.jenv/bin:$PATH"
-  lazyload jenv java -- 'eval "$(jenv init -)"'
-#+end_src
 ** uv
 #+begin_src zsh
 export PATH="$HOME/.local/bin/:$PATH"
-#+end_src
-** mise
-#+begin_src zsh
-eval "$(mise activate zsh)"
-export PATH=$PATH:$HOME/zk/bin
 #+end_src
 ** go
 #+begin_src zsh

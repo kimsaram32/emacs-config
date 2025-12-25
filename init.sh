@@ -4,6 +4,18 @@ set -Eeuo pipefail
 
 DOTFILES_DIR="$HOME/me/dotfiles"
 
+declare -A links=(
+  ["wezterm"]="${HOME}/.config/wezterm"
+  ["out/.tmux.conf"]="${HOME}/.tmux.conf"
+  ["out/.zshrc"]="${HOME}/.zshrc"
+  ["out/.zprofile"]="${HOME}/.zprofile"
+  [".zsh_plugins.txt"]="${HOME}/.zsh_plugins.txt"
+  ["mise.toml"]="${HOME}/.config/mise/config.toml"
+  ["emacs/README.org"]="${HOME}/.emacs.d/README.org"
+  ["emacs/init.el"]="${HOME}/.emacs.d/init.el"
+  ["emacs/elfeed.el"]="${HOME}/.emacs.d/elfeed.el"
+)
+
 relink() {
   local source="$1"
   local target="$2"
@@ -32,17 +44,6 @@ relink() {
     echo "Relinked: $source $target"
   fi
 }
-
-declare -A links=(
-  ["wezterm"]="${HOME}/.config/wezterm"
-  ["out/.tmux.conf"]="${HOME}/.tmux.conf"
-  ["out/.zshrc"]="${HOME}/.zshrc"
-  ["out/.zprofile"]="${HOME}/.zprofile"
-  [".zsh_plugins.txt"]="${HOME}/.zsh_plugins.txt"
-  ["emacs/README.org"]="${HOME}/.emacs.d/README.org"
-  ["emacs/init.el"]="${HOME}/.emacs.d/init.el"
-  ["emacs/elfeed.el"]="${HOME}/.emacs.d/elfeed.el"
-)
 
 echo "Linking..."
 

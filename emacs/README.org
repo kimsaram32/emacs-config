@@ -78,7 +78,7 @@ Personal libraries
 #+begin_src elisp
   (require 'sr-startup)
 #+end_src
-* Package installation
+* Package management
 ** Use Melpa
 #+begin_src elisp
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -89,23 +89,30 @@ Personal libraries
 (load custom-file)
 #+end_src
 * Environment
+These are ad-hoc configurations for my local environment.
 ** Workaround: =Invalid function: org-element-with-disabled-cache=
 [[https://www.reddit.com/r/emacs/comments/1hayavx/invalid_function_orgelementwithdisabledcache/][Reddit]]
 #+begin_src elisp
   (setq native-comp-jit-compilation-deny-list '(".*org-element.*")) 
+#+end_src
+** mise integration
+[[https://mise.jdx.dev/ide-integration.html#emacs][IDE integration with mise]]
+#+begin_src elisp
+  (setenv "PATH" (concat (getenv "PATH") ":/home/user/.local/share/mise/shims"))
+  (setq exec-path (append exec-path '("/home/user/.local/share/mise/shims")))
 #+end_src
 ** exec-path-from-shell
 #+begin_src elisp
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
 #+end_src
-** Enable disabled commands
-#+begin_src elisp
-(put 'scroll-left 'disabled nil)
-#+end_src
 ** macOS keyboard
 #+begin_src elisp
   (setq mac-option-modifier 'meta)
+#+end_src
+* Enable disabled commands
+#+begin_src elisp
+(put 'scroll-left 'disabled nil)
 #+end_src
 * Repeated key bindings
 From [[https://karthinks.com/software/persistent-prefix-keymaps-in-emacs/][Persistent prefifx keymaps in Emacs]]
@@ -244,6 +251,10 @@ Key binding for =M-x append-to-register=.
 * Minibuffer completions
 #+begin_src elisp
   (setq completions-format 'one-column)
+#+end_src
+
+#+begin_src elisp
+  (add-to-list 'completion-category-overrides)
 #+end_src
 * Windows
 ** Display-buffer
@@ -526,7 +537,8 @@ Current stack is:
 - Xref
 - Company-mode for autocompletion
 - Emacs projects for workspace management
-- Experimenting with Combobulate for structured editing
+- Tree-sitter
+  - Experimenting with Combobulate for structured editing
 
 ** Eglot
 #+begin_src elisp
@@ -582,6 +594,7 @@ so bind them using a minor mode.
   (setq company-idle-delay 0)
 #+end_src
 ** Tree-sitter
+*** Grammars
 #+begin_src elisp
   (setq treesit-language-source-alist
         '((bash "https://github.com/tree-sitter/tree-sitter-bash")
@@ -601,25 +614,40 @@ so bind them using a minor mode.
           (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
           (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 #+end_src
+*** Major mode remaps
+#+begin_src elisp
+  (setq major-mode-remap-alist
+        (append
+         '((c-mode . c-ts-mode)
+           (js-mode . js-ts-mode)
+           (python-mode . python-ts-mode)
+           (go-mode . go-ts-mode))
+         major-mode-remap-alist))
+#+end_src
 ** Format-all
 #+begin_src elisp
   (keymap-set prog-mode-map "C-c C-f" #'format-all-region-or-buffer)
+  (keymap-set prog-mode-map "C-c f" #'format-all-region-or-buffer)
+#+end_src
+
+Enable in html-ts-mode, because it's a text-mode.
+#+begin_src elisp
+  (keymap-set html-ts-mode-map "C-c C-f" #'format-all-region-or-buffer)
+  (keymap-set html-ts-mode-map "C-c f" #'format-all-region-or-buffer)
 #+end_src
 ** Languages
-*** Python
-**** Set shell interpreter
-#+begin_src elisp
-(setq python-shell-interpreter "python3")
-#+end_src
 *** CSS
+Indent offset.
+#+begin_src elisp
+  (setq css-indent-offset 2)
+#+end_src
+
 Use rainbow mode.
 #+begin_src elisp
   (add-hook 'css-ts-mode-hook #'rainbow-mode)
 #+end_src
 *** C (TS)
 #+begin_src elisp
-  (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
-  ; (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
   (setq c-ts-mode-indent-style 'bsd)
   (setq c-ts-mode-indent-offset 2)
 
@@ -645,19 +673,44 @@ Use rainbow mode.
   (keymap-set c-mode-map "C-M-x" 'me:c-next-defun-body)
   (keymap-set c-mode-map "C-M-y" 'me:c-previous-defun-body)
 #+end_src
-*** Go
+*** Go (TS)
 #+begin_src elisp
-  (keymap-set go-mode-map "C-c C-f" #'gofmt)
+  (keymap-set go-ts-mode-map "C-c C-f" #'gofmt)
 #+end_src
 *** JavaScript
 #+begin_src elisp
   (setq js-indent-level 2)
+#+end_src
+*** HTML (TS)
+#+begin_src elisp
+  (add-to-list 'major-mode-remap-alist '(mhtml-mode . html-ts-mode))
+#+end_src
+**** Disable SGML mode keymaps
+I don't like them
+#+begin_src elisp
+  (unbind-key "C-c C-f" sgml-mode-map)
+#+end_src
+**** Use emmet
+#+begin_src elisp
+  (add-hook 'html-ts-mode-hook #'emmet-mode)
 #+end_src
 *** Yaml
 #+begin_src elisp
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
 #+end_src
 ** Combobulate
+*** Language integration
+#+begin_src elisp
+  (setq sr/combobulate-enable-hooks
+        '(js-ts-mode-hook
+          python-ts-mode-hook
+          json-ts-mode-hook
+          html-ts-mode-hook))
+
+  (dolist (hook sr/combobulate-enable-hooks)
+    (add-hook hook #'combobulate-mode))
+#+end_src
+*** Render navigation tree
 #+begin_src elisp
   (defun me:combobulate-display-tree-at-point ()
     "Render a navigation tree around the node at point."
@@ -978,8 +1031,8 @@ Those work well with repetitions.
 #+begin_src elisp
   (setq org-directory me:note-root-directory)
   (setq org-archive-location (expand-file-name
-  			    "archives/%s.archive::"
-  			    me:note-root-directory))
+  			                      "archives/%s.archive::"
+  			                      me:note-root-directory))
 #+end_src
 ** File apps
 #+begin_src elisp
@@ -1064,9 +1117,9 @@ Exprimenting with this
         '((sequence "TODO" "WORKING" "|" "DONE" "FAILED")))
   (setq org-todo-keyword-faces
         '(("TODO" . "gold")
-  	("IDEA" . "coral")
-  	("WORKING" . "CadetBlue2")
-  	("FAILED" . "brown1")))
+  	      ("IDEA" . "coral")
+  	      ("WORKING" . "CadetBlue2")
+  	      ("FAILED" . "brown1")))
 #+end_src
 *** Deadine
 #+begin_src elisp
@@ -1083,12 +1136,6 @@ Exprimenting with this
   (add-to-list 'org-modules 'habit)
 #+end_src
 ** Editing source code
-#+begin_src elisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((python . t)))
-#+end_src
-*** Remove source code indention
 #+begin_src elisp
 (setq org-edit-src-content-indentation 2)
 #+end_src
@@ -1149,16 +1196,6 @@ I need to add tags inside the capture buffer.
 #+begin_src elisp
   (keymap-unset org-capture-mode-map "C-c C-c")
   (keymap-set org-capture-mode-map "C-c C-f" 'org-capture-finalize)
-#+end_src
-** Org-babel
-*** Disable confirmation
-I know what I'm doing
-#+begin_src elisp
-(setq org-confirm-babel-evaluate nil)
-#+end_src
-*** Make the result keyword lowercased
-#+begin_src elisp
-(setq org-babel-results-keyword "results")
 #+end_src
 ** Insert image from clipboard
 #+begin_src elisp
@@ -1236,6 +1273,27 @@ Quickly jump to =README.org= with a heading.
 ** todo
 #+begin_src elisp
 (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+#+end_src
+* Org-babel
+** Key bindings
+#+begin_src elisp
+  (keymap-set org-babel-map "C-k" #'org-babel-remove-result-one-or-many)
+#+end_src
+** Load languages
+#+begin_src elisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((python . t)
+     (shell . t)))
+#+end_src
+** Disable confirmation
+I know what I'm doing
+#+begin_src elisp
+(setq org-confirm-babel-evaluate nil)
+#+end_src
+** Make the result keyword lowercased
+#+begin_src elisp
+(setq org-babel-results-keyword "results")
 #+end_src
 * Org-journal
 ** Key bindings

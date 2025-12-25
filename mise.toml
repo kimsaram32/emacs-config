@@ -1,0 +1,8 @@
+[tools]
+java = "21"
+node = "latest"
+python = "3.13"
+tuist = "4.31.0"
+
+[settings]
+idiomatic_version_file_enable_tools = ["java"]
