@@ -1,0 +1,46 @@
+#    -*- mode: org -*-
+
+
+Archived entries from file /Users/kimsaram32/me/dotfiles/emacs/README.org
+
+
+* Help enhancements
+:PROPERTIES:
+:ARCHIVE_TIME: 2025-12-26 Fri 07:30
+:ARCHIVE_FILE: ~/me/dotfiles/emacs/README.org
+:ARCHIVE_CATEGORY: README
+:END:
+** Elisp-demos
+#+begin_src elisp
+  (require 'elisp-demos)
+#+end_src
+*** Help
+#+begin_src elisp
+  (advice-add 'describe-function-1 :after #'elisp-demos-advice-describe-function-1)
+#+end_src
+*** Helpful
+#+begin_src elisp
+  (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update)
+#+end_src
+** Apropos key bindings
+#+begin_src elisp
+  (unbind-key "a" help-map)
+  
+  (keymap-set help-map "a a" 'apropos-command)
+  (keymap-set help-map "a f" 'apropos-function)
+  (keymap-set help-map "a v" 'apropos-variable)
+  (keymap-set help-map "a u" 'apropos-user-option)
+  (keymap-set help-map "a l" 'apropos-library)
+#+end_src
+** Helpful
+#+begin_src elisp
+  (require 'helpful)
+#+end_src
+*** Replace keybindings
+#+begin_src elisp
+  (keymap-set help-map "f" #'helpful-function)
+  (keymap-set help-map "v" #'helpful-variable)
+  (keymap-set help-map "k" #'helpful-key)
+  (keymap-set help-map "x" #'helpful-command)
+  (keymap-set help-map "o" #'helpful-symbol)
+#+end_src

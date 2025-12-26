@@ -253,9 +253,6 @@ Key binding for =M-x append-to-register=.
   (setq completions-format 'one-column)
 #+end_src
 
-#+begin_src elisp
-  (add-to-list 'completion-category-overrides)
-#+end_src
 * Windows
 ** Display-buffer
 #+begin_src elisp
@@ -621,7 +618,8 @@ so bind them using a minor mode.
          '((c-mode . c-ts-mode)
            (js-mode . js-ts-mode)
            (python-mode . python-ts-mode)
-           (go-mode . go-ts-mode))
+           (go-mode . go-ts-mode)
+           (yaml-mode . yaml-ts-mode))
          major-mode-remap-alist))
 #+end_src
 ** Format-all
@@ -632,11 +630,16 @@ so bind them using a minor mode.
 
 Enable in html-ts-mode, because it's a text-mode.
 #+begin_src elisp
-  (keymap-set html-ts-mode-map "C-c C-f" #'format-all-region-or-buffer)
-  (keymap-set html-ts-mode-map "C-c f" #'format-all-region-or-buffer)
+  (with-eval-after-load 'html-ts-mode
+    (keymap-set html-ts-mode-map "C-c C-f" #'format-all-region-or-buffer)
+    (keymap-set html-ts-mode-map "C-c f" #'format-all-region-or-buffer))
 #+end_src
 ** Languages
 *** CSS
+#+begin_src elisp
+  (require 'css-mode)
+#+end_src
+
 Indent offset.
 #+begin_src elisp
   (setq css-indent-offset 2)
@@ -647,6 +650,10 @@ Use rainbow mode.
   (add-hook 'css-ts-mode-hook #'rainbow-mode)
 #+end_src
 *** C (TS)
+#+begin_src elisp
+  (require 'c-ts-mode)
+#+end_src
+
 #+begin_src elisp
   (setq c-ts-mode-indent-style 'bsd)
   (setq c-ts-mode-indent-offset 2)
@@ -675,13 +682,26 @@ Use rainbow mode.
 #+end_src
 *** Go (TS)
 #+begin_src elisp
+  (require 'go-ts-mode)
+#+end_src
+
+#+begin_src elisp
   (keymap-set go-ts-mode-map "C-c C-f" #'gofmt)
 #+end_src
 *** JavaScript
 #+begin_src elisp
+  (require 'js)
+#+end_src
+
+
+#+begin_src elisp
   (setq js-indent-level 2)
 #+end_src
 *** HTML (TS)
+#+begin_src elisp
+  (require 'html-ts-mode)
+#+end_src
+
 #+begin_src elisp
   (add-to-list 'major-mode-remap-alist '(mhtml-mode . html-ts-mode))
 #+end_src
@@ -696,7 +716,11 @@ I don't like them
 #+end_src
 *** Yaml
 #+begin_src elisp
-  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
+  (require 'yaml-ts-mode)
+#+end_src
+
+#+begin_src elisp
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-ts-mode))
 #+end_src
 ** Combobulate
 *** Language integration
@@ -1369,24 +1393,26 @@ No need for carry overs.
   		  (org-super-agenda-groups
   		   '((:discard (:tag "event"))
   		     (:name "Fleeting notes"
-  			    :and (:tag "fleeting"
-  				       :not (:todo ("DONE")))
-  			    :order 1)
+  			          :and (:tag "fleeting"
+  				                   :not (:todo ("DONE")))
+  			          :order 1)
   		     (:name "School"
-  			    :and (:todo t
-  					:tag ("schoolwork" "school" "내신")))
+  			          :and (:todo t
+  					                  :tag ("schoolwork" "school" "내신")))
   		     (:name "Todo"
-  			    :and (:todo ("TODO" "WORKING")
-                                          :not (:tag "trivial")))
-                       (:name "Trivial tasks"
-  			    :and (:todo ("TODO" "WORKING")
-  					:tag "trivial"))
+  			          :and (:todo ("TODO" "WORKING")
+                              :not (:tag "trivial")))
+           (:name "ZK"
+                  :category "zk")
+           (:name "Trivial tasks"
+  			          :and (:todo ("TODO" "WORKING")
+  					                  :tag "trivial"))
   		     (:name "Journals"
-  			    :tag "journal"
-  			    :order 2)
+  			          :tag "journal"
+  			          :order 2)
   		     (:name "Today"
-  			    :time-grid t
-  			    :order 2))))))))
+  			          :time-grid t
+  			          :order 2))))))))
 #+end_src
 ** Project agenda
 #+begin_src elisp
@@ -1506,7 +1532,8 @@ Integrate with org-journal.
   (add-to-list 'org-capture-templates
   	     `("v" "Capture"
   	       entry (file ,(expand-file-name "captures.org" me:note-root-directory))
-  	       "* %T %^{person} %^{title}
+  	       "* %^{title}
+  %T
   %?"
   	       :prepend t))
 #+end_src
