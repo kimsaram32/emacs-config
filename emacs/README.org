@@ -592,6 +592,9 @@ so bind them using a minor mode.
 #+end_src
 ** Tree-sitter
 *** Grammars
+I haven't tested all of them.
+If you encounter any problems, use the version from the [[https://github.com/mickeynp/combobulate?tab=readme-ov-file#complete-example-with-tree-sitter-grammar-installation][combobulate repository]].
+
 #+begin_src elisp
   (setq treesit-language-source-alist
         '((bash "https://github.com/tree-sitter/tree-sitter-bash")
@@ -609,7 +612,7 @@ so bind them using a minor mode.
           (toml "https://github.com/tree-sitter/tree-sitter-toml")
           (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
           (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-          (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+          (yaml "https://github.com/ikatyang/tree-sitter-yaml" "v0.5.0")))
 #+end_src
 *** Major mode remaps
 #+begin_src elisp
@@ -729,7 +732,8 @@ I don't like them
         '(js-ts-mode-hook
           python-ts-mode-hook
           json-ts-mode-hook
-          html-ts-mode-hook))
+          html-ts-mode-hook
+          yaml-ts-mode-hook))
 
   (dolist (hook sr/combobulate-enable-hooks)
     (add-hook hook #'combobulate-mode))
