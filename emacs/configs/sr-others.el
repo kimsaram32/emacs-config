@@ -47,6 +47,8 @@
 (with-eval-after-load 'dired
   (setq dired-listing-switches "-halX --group-directories-first")
   (setq dired-auto-revert-buffer t)
+  (setq dired-vc-rename-file t)
+  (setq dired-movement-style 'cycle)
 
   (setq delete-by-moving-to-trash t)
 
@@ -209,6 +211,16 @@ ARG has the same meaning as `vterm'."
       (cd directory))))
 
 (keymap-global-set "C-c e t" #'sr/vterm-switch-and-cd)
+
+;;; TTS
+
+(with-eval-after-load 'sr-tts
+  (setq sr/tts-kokoro-options
+        '(:port 8880
+                :voice "am_michael"
+                :lang-code "a")))
+
+(keymap-global-set "C-c d t" #'sr/tts-read-text)
 
 ;;; _
 
