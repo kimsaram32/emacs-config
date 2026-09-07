@@ -251,20 +251,12 @@ if IDENTIFIER is invalid as a daily note identifier, return nil."
 
 ;;; Calendar integration (in progress)
 
-;; TODO
-(defun sr/denote-periodic-daily-note-id-from-calendar (date)
-  (format
-   "D%d%02d%02d"
-   (calendar-extract-year date)
-   (calendar-extract-month date)
-   (calendar-extract-day date)))
-
 (defun sr/denote-periodic-calendar-find-daily-note-at-cursor ()
   (interactive)
-  (if-let* ((identifier (sr/denote-periodic-daily-note-id-from-calendar (calendar-cursor-to-date)))
-            (file (denote-get-path-by-id identifier)))
-      (funcall denote-open-link-function file)
-    (user-error "No daily note for date at point")))
+  (sr/denote-periodic-find-or-create-note
+   (sr/denote-periodic--calendar-date-to-time (calendar-cursor-to-date))
+   'daily
+   "No daily note for date at point. Create?"))
 
 (defvar-keymap sr/denote-periodic-calendar-mode-map
   "d" #'sr/denote-periodic-calendar-find-daily-note-at-cursor)
