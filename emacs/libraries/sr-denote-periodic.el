@@ -119,7 +119,27 @@ DATE should be a time value."
    (plist-get (sr/denote-periodic-get-type type) :id-format)
    date))
 
-;;; Note commands
+;;; Note creation
+
+(defun sr/denote-periodic-create-note (date type)
+  "Create the periodic note of TYPE for DATE.
+This function should be called only if there is no existing note with
+the encoded identifier."
+  (let ((type-entry (sr/denote-periodic-get-type type))
+        (directory (expand-file-name
+                    (format-time-string "%Y" date)
+                    sr/denote-periodic-directory)))
+    (unless (file-exists-p directory)
+      (make-directory directory))
+    (denote
+     (format-time-string (plist-get type-entry :title-format) date)
+     sr/denote-periodic-note-keywords
+     nil
+     directory
+     date
+     nil
+     (plist-get type-entry :signature)
+     (sr/denote-periodic-date-to-identifier date type))))
 
 (defun sr/denote-periodic--calendar-date-to-time (date)
   "Convert a calendar date to a time value."
@@ -142,45 +162,32 @@ DATE should be a time value."
            "Period type: " (mapcar #'car sr/denote-periodic-types)
            nil t)))
 
-(defun sr/denote-periodic--create-note (date type)
-  "Create the periodic note of TYPE for DATE.
-This function should be called only if there is no existing note with
-the encoded identifier."
-  (let ((type-entry (sr/denote-periodic-get-type type))
-        (directory (expand-file-name
-                    (format-time-string "%Y" date)
-                    sr/denote-periodic-directory)))
-    (unless (file-exists-p directory)
-      (make-directory directory))
-    (denote
-     (format-time-string (plist-get type-entry :title-format) date)
-     sr/denote-periodic-note-keywords
-     nil
-     directory
-     date
-     nil
-     (plist-get type-entry :signature)
-     (sr/denote-periodic-date-to-identifier date type))))
-
 ;;;###autoload
-(defun sr/denote-periodic-find-or-create-note (date type)
-  "Find the periodic note of TYPE for DATE, or create one if it does not exist."
-  (interactive (list (sr/denote-periodic-time-prompt)
-                     (sr/denote-periodic-type-prompt)))
+(defun sr/denote-periodic-find-or-create-note (date type &optional prompt)
+  "Find the periodic note of TYPE for DATE, or create one if it does not exist.
+When PROMPT is non-nil, ask the user to confirm the creation; otherwise,
+create the note without confirmation."
+  (interactive (let ((time (sr/denote-periodic-time-prompt))
+                     (type (sr/denote-periodic-type-prompt)))
+                 (list time type
+                       (format "No %s note for %s. Create?"
+                               type (format-time-string "%Y-%m-%d" time)))))
   (if-let* ((file (denote-get-path-by-id
                    (sr/denote-periodic-date-to-identifier date type))))
       (find-file file)
-    (sr/denote-periodic--create-note date type)))
+    (when (or (not prompt) (y-or-n-p prompt))
+      (sr/denote-periodic-create-note date type))))
+
+;;;; Convenience functions
 
 ;;;###autoload
 (defun sr/denote-periodic-today (type)
   "Find or create the periodic note of TYPE for the current date."
   (interactive (list (sr/denote-periodic-type-prompt)))
-  (sr/denote-periodic-find-or-create-note
-   (funcall sr/denote-periodic-get-today-date-function)
-   type))
-
-;; Convenience functions
+  (let ((date (funcall sr/denote-periodic-get-today-date-function)))
+    (sr/denote-periodic-find-or-create-note
+     date type
+     (format "No %s note for. Create?" type))))
 
 (defmacro sr/denote-periodic-define-today-function (name)
   `(defun ,(intern (format "sr/denote-periodic-%s-note-today" name)) ()
@@ -194,6 +201,8 @@ the encoded identifier."
 (sr/denote-periodic-define-today-function yearly)
 
 ;;; Daily note mode
+
+;; TODO: What if the user customizes the daily note type?
 
 (defun sr/denote-periodic-daily-note-id-to-date (identifier)
   "Return the corresponding date of a daily note identifier IDENTIFIER.
@@ -214,26 +223,22 @@ if IDENTIFIER is invalid as a daily note identifier, return nil."
 (defun sr/denote-periodic-find-previous-daily-note ()
   "Find the previous daily note."
   (interactive)
-  (if-let* ((date (sr/denote-periodic-daily-note-buffer-date))
-            (prev-date (time-subtract date (days-to-time 1))))
-      (if-let ((file (denote-get-path-by-id
-                      (sr/denote-periodic-date-to-identifier prev-date 'daily))))
-          (funcall denote-open-link-function file)
-        (when (y-or-n-p "No previous daily note found. create?")
-          (sr/denote-periodic--create-note prev-date 'daily)))
+  (if-let ((date (sr/denote-periodic-daily-note-buffer-date)))
+      (sr/denote-periodic-find-or-create-note
+       (time-subtract date (days-to-time 1))
+       'daily
+       "No previous daily note. create?")
     (user-error "Not inside a daily note")))
 
 ;;;###autoload
 (defun sr/denote-periodic-find-next-daily-note ()
   "Find the next daily note."
   (interactive)
-  (if-let* ((date (sr/denote-periodic-daily-note-buffer-date))
-            (next-date (time-add date (days-to-time 1))))
-      (if-let ((file (denote-get-path-by-id
-                      (sr/denote-periodic-date-to-identifier next-date 'daily))))
-          (funcall denote-open-link-function file)
-        (when (y-or-n-p "No next daily note found. create?")
-          (sr/denote-periodic--create-note next-date 'daily)))
+  (if-let ((date (sr/denote-periodic-daily-note-buffer-date)))
+      (sr/denote-periodic-find-or-create-note
+       (time-add date (days-to-time 1))
+       'daily
+       "No next daily note. create?")
     (user-error "Not inside a daily note")))
 
 (defvar-keymap sr/denote-periodic-daily-note-mode-map
