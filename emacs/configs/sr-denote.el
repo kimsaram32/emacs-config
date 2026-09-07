@@ -72,12 +72,6 @@
 
 (setq denote-open-link-function #'find-file)
 
-;;; Buffer renaming
-
-(setq denote-buffer-name-prefix "d: ")
-(setq denote-rename-buffer-format "%i %t")
-(denote-rename-buffer-mode 1)
-
 ;;; Linking
 
 (defun sr/denote-link-from-last-buffer (id-only)
@@ -197,6 +191,21 @@ This returns a plist of two properties: TITLE and CONTENT."
   (interactive)
   (let ((denote-directory sr/note-zk-directory))
     (denote-explore-random-note)))
+
+;;; Buffer integration
+
+(setq denote-buffer-name-prefix "d: ")
+(setq denote-rename-buffer-format "%i %t")
+(denote-rename-buffer-mode 1)
+
+(defun sr/denote-rename-after-save ()
+  "Rename the current note if needed.
+This function is intended to be added to `after-save-hook'."
+  (let ((denote-rename-confirmations nil))
+    (when (and buffer-file-name (denote-file-has-denoted-filename-p buffer-file-name))
+      (ignore-errors (denote-rename-file-using-front-matter buffer-file-name)))))
+
+(add-hook 'after-save-hook #'sr/denote-rename-after-save)
 
 ;;; Dired integration
 
