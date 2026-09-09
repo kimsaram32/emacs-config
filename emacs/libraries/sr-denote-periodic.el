@@ -153,8 +153,12 @@ the encoded identifier."
      nil -1 nil))))
 
 (defun sr/denote-periodic-time-prompt ()
-  "Prompt for a time value."
-  (sr/denote-periodic--calendar-date-to-time (calendar-read-date)))
+  "Prompt for a time value.
+If `org' is available, use `org-read-date'. Else, fall back to
+`calendar-read-date'."
+  (if (require 'org t)
+       (org-parse-time-string (org-read-date))
+    (sr/denote-periodic--calendar-date-to-time (calendar-read-date))))
 
 (defun sr/denote-periodic-type-prompt ()
   "Prompt for periodic type."
